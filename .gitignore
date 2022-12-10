@@ -1,0 +1,8 @@
+Test
+.DS_Store
+._*
+Thumbs.db
+*.obj
+*.dll
+*.exe
+
