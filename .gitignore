@@ -4,5 +4,6 @@ Test
 Thumbs.db
 *.obj
 *.dll
+!zlib.dll
 *.exe
 
