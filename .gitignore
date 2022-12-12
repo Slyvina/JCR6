@@ -1,4 +1,5 @@
 Test
+Test*
 .DS_Store
 ._*
 Thumbs.db
@@ -6,4 +7,5 @@ Thumbs.db
 *.dll
 !zlib.dll
 *.exe
+
 
