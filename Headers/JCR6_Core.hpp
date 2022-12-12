@@ -1,7 +1,7 @@
 // Lic:
 // JCR6/Headers/JCR6_Core.hpp
 // Slyvina - JCR6 - Core (header)
-// version: 22.12.11
+// version: 22.12.12
 // Copyright (C) 2022 Jeroen P. Broks
 // This software is provided 'as-is', without any express or implied
 // warranty.  In no event will the authors be held liable for any damages
@@ -160,7 +160,7 @@ namespace Slyvina {
 			/// </summary>
 			/// <param name="_Entry">Name of the entry</param>
 			/// <returns></returns>
-			inline std::string GetString(std::string _Entry) { auto BUF{ B(_Entry) }; return BUF->ReadString(BUF->Size()); }
+			inline std::string GetString(std::string _Entry) { auto BUF{ B(_Entry) }; if (BUF){ return BUF->ReadString(BUF->Size()); } else return ""; }
 
 			/// <summary>
 			/// Reads an entire JCR6 entry as a string and splits it into lines (Note: <CR> will be removed from the string and the system will then take <LF> as the end of each line. This way the Windows and Unix standards should work, but other ways (like <CR> only systems) are not supported this way).
