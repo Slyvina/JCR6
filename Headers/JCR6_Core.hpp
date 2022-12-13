@@ -1,7 +1,7 @@
 // Lic:
 // JCR6/Headers/JCR6_Core.hpp
 // Slyvina - JCR6 - Core (header)
-// version: 22.12.12
+// version: 22.12.13
 // Copyright (C) 2022 Jeroen P. Broks
 // This software is provided 'as-is', without any express or implied
 // warranty.  In no event will the authors be held liable for any damages
@@ -78,6 +78,7 @@ namespace Slyvina {
 		} JC_CompressDriver;
 		void RegisterCompressDriver(JC_CompressDriver Driver);
 
+		std::map<std::string, JC_CompressDriver>* GetCompDrivers();
 #pragma endregion
 
 

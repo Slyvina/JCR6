@@ -1,7 +1,7 @@
 // Lic:
 // JCR6/Source/JCR6_Core.cpp
 // Slyvina - JCR6 - Core
-// version: 22.12.12
+// version: 22.12.13
 // Copyright (C) 2022 Jeroen P. Broks
 // This software is provided 'as-is', without any express or implied
 // warranty.  In no event will the authors be held liable for any damages
@@ -88,6 +88,9 @@ namespace Slyvina {
 			}
 			CompDrivers[Driver.Name] = Driver;
 
+		}
+		std::map<std::string, JC_CompressDriver>* GetCompDrivers() {
+			return &CompDrivers;
 		}
 #pragma endregion
 
@@ -633,6 +636,7 @@ namespace Slyvina {
 
 #pragma region Store
 		static int Store_Compress(char* Uncompressed, char* Compressed, int size_uncompressed,string,string) {
+			Chat("Just copying bytes, as this is 'Store'");
 			for (int i = 0; i < size_uncompressed; ++i) Compressed[i] = Uncompressed[i];
 			return size_uncompressed;
 		}
