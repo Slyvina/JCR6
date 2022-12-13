@@ -406,6 +406,18 @@ namespace Slyvina {
 			}
 			_Parent->LastAddedEntry = NEntry;
 			NEntry->_ConfigString["__JCR6FOR"] = "Slyvina (C++)";
+#ifdef SlyvWindows
+			NEntry->_ConfigString["__OS"] = "Windows";
+			NEntry->_ConfigInt["__CHMOD"] = 0777;
+#elif SlyvMac
+			NEntry->_ConfigString["__OS"] = "Mac";
+#elif SlyvIOS
+			NEntry->_ConfigString["__OS"] = "iOS";
+#elif SlyvLinux
+			NEntry->_ConfigString["__OS"] = "Linux";
+#else
+			NEntry->_ConfigString["__OS"] = "Unidentified";
+#endif
 			_Parent->Entries[Upper(NEntry->Name())] = NEntry;
 			//parent.OpenEntries.Remove(this);
 			_Parent->OpenEntries.erase(_Entry);
