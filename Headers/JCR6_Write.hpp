@@ -80,7 +80,7 @@ namespace Slyvina {
 			/// <param name="Author">Author name.</param>
 			/// <param name="Notes">Notes.</param>
 			/// <param name="Endian">Endian setting.</param>
-			inline JT_CreateStream NewEntry(std::string Entry, std::string Storage = "Store", std::string Author = "", std::string Notes = "", Units::Endian _Endian = Units::Endian::Little) { nb(Entry, Storage, Author, Notes, _Endian); }
+			inline JT_CreateStream NewEntry(std::string Entry, std::string Storage = "Store", std::string Author = "", std::string Notes = "", Units::Endian _Endian = Units::Endian::Little) { return nb(Entry, Storage, Author, Notes, _Endian); }
 
 
 			/// <summary>
@@ -175,6 +175,13 @@ namespace Slyvina {
 			inline void Write(int64 i) { WriteInt64(i); }
 			inline void Write(std::string s, bool raw = false) { WriteString(s, raw); }
 			inline void Write(StringMap sm) { _Buf->WriteStringMap(sm); }
+
+			/// <summary>
+			/// Writes a line to the JCR6 entry. Please note, this function always works UNIX style (so LF only) regardless of the platform you use.
+			/// </summary>
+			/// <param name="l"></param>
+			inline void WriteLn(std::string l) { WriteString(l, true); WriteByte(10); }
+			inline void WrilteLine(std::string l) { WriteLn(l); }
 
 			inline uint32 Block() { return _Block; }
 
