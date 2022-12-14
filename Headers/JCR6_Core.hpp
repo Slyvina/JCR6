@@ -1,7 +1,7 @@
 // Lic:
 // JCR6/Headers/JCR6_Core.hpp
 // Slyvina - JCR6 - Core (header)
-// version: 22.12.13
+// version: 22.12.14
 // Copyright (C) 2022 Jeroen P. Broks
 // This software is provided 'as-is', without any express or implied
 // warranty.  In no event will the authors be held liable for any damages
@@ -172,6 +172,7 @@ namespace Slyvina {
 
 
 			StringMap GetStringMap(std::string _Entry);
+			inline Units::Bank GetBank(std::string _Entry, Units::Endian E = Units::Endian::Little) { return B(_Entry, E); }
 		};
 
 		class _JT_Entry {
