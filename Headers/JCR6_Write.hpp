@@ -131,6 +131,8 @@ namespace Slyvina {
 			void AddBytes(byte* mybuffer, uint32 buffersize, std::string Entry, std::string Storage = "Store", std::string Author = "", std::string Notes = "");
 			void AddFile(std::string OriginalFile, std::string Entry, std::string Storage = "Store", std::string Author = "", std::string Notes = "");
 
+			void AddBank(Units::Bank bnk, std::string Entry, std::string Storage = "Store", std::string A = "Author", std::string Notes = "");
+
 			inline void AddComment(std::string name, std::string comment) { Comments[name] = comment; }
 
 			/// <summary>
