@@ -1,7 +1,7 @@
 // Lic:
 // JCR6/Headers/JCR6_Write.hpp
 // Slyvina - JCR6 - Writer (header)
-// version: 22.12.13
+// version: 22.12.14
 // Copyright (C) 2022 Jeroen P. Broks
 // This software is provided 'as-is', without any express or implied
 // warranty.  In no event will the authors be held liable for any damages
@@ -204,10 +204,9 @@ namespace Slyvina {
 			return ret;
 		}
 
-		inline JT_CreateStream NewCreateStream(_JT_Create* theparent, uint32 theblock, Units::Bank thestream, std::string theentry, std::string theauthor = "", std::string thenotes = "", Units::Endian theendian = Units::Endian::Little) {
-			//auto ret = std::make_shared<_JT_CreateStream>(theparent, theblock, thestream, theentry, thenotes, theendian);
-			//theparent->OpenEntries[theentry] = ret;
-			// TO DO: work around shared pointers not being able to handle overloads
+		inline JT_CreateStream NewCreateStream(_JT_Create* theparent, uint32 theblock, Units::Bank thestream, std::string theentry, std::string theauthor = "", std::string thenotes = "", Units::Endian theendian = Units::Endian::Little) {			
+			JT_CreateStream ret{ new _JT_CreateStream(theparent,theblock,thestream,theentry,theauthor,thenotes,theendian) };
+			theparent->OpenEntries[theentry] = ret;
 		}
 
 		class _JT_CreateBlock {
