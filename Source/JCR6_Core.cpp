@@ -1,7 +1,7 @@
 // Lic:
 // JCR6/Source/JCR6_Core.cpp
 // Slyvina - JCR6 - Core
-// version: 22.12.14
+// version: 22.12.19
 // Copyright (C) 2022 Jeroen P. Broks
 // This software is provided 'as-is', without any express or implied
 // warranty.  In no event will the authors be held liable for any damages
@@ -128,6 +128,10 @@ namespace Slyvina {
 			if (driv == "NONE") { _Error("File not recognized by JCR6", File); return nullptr; }
 			Chat("File '" << File << "' has been recognized as by driver: " << driv << "!");
 			auto ret = DirDrivers[driv].Dir(File,fpath);
+			if (!ret) {
+				_Error("Failed to get the directory of a file. with driver " + driv + ".\n" + Last()->ErrorMessage, File, fpath);
+				return nullptr;
+			}
 			ret->__StartMainFile = File;
 			return ret;
 		}
@@ -246,6 +250,35 @@ namespace Slyvina {
 			}
 			return ret;
 		}
+
+		bool _JT_Dir::DirectoryExists(std::string Dir) {
+			if (!Dir.size()) return false;
+			auto CDir{ Upper(ChReplace(Dir, '\\', '/')) }; 
+			if (CDir[CDir.size() - 1] != '/') CDir += '/';
+			for (auto& EI : _Entries) {
+				if (Prefixed(EI.first, CDir)) return true;
+			}
+			return false;
+		}
+
+		VecString _JT_Dir::Directory(std::string Dir, bool allowrecursive ) {
+			auto ret { NewVecString() };
+			auto CDir{ Upper(ChReplace(Dir, '\\', '/')) };
+			auto PDir{ CDir };
+			if (CDir.size() && CDir[CDir.size() - 1] != '/') CDir += '/';
+			if (PDir.size() && PDir[PDir.size() - 1] == '/') Left(PDir, PDir.size() - 1);
+			for (auto& EI : _Entries) {
+				if (!CDir.size()) {
+					if (allowrecursive || ExtractDir(EI.first) == "") ret->push_back(EI.second->Name());					
+				} else if (allowrecursive && Prefixed(EI.first,CDir)) {
+					ret->push_back(EI.second->Name());
+				} else if (ExtractDir(EI.first) == PDir) {
+					ret->push_back(EI.second->Name());
+				}
+			}
+			return ret;
+		}
+
 
 		JT_Entry _JT_Entry::Create(std::string Name, JT_Dir parent, bool overwrite) {
 			if (parent->EntryExists(Name) && (!overwrite)) {

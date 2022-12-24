@@ -1,7 +1,7 @@
 // Lic:
 // JCR6/Headers/JCR6_Core.hpp
 // Slyvina - JCR6 - Core (header)
-// version: 22.12.14
+// version: 22.12.17
 // Copyright (C) 2022 Jeroen P. Broks
 // This software is provided 'as-is', without any express or implied
 // warranty.  In no event will the authors be held liable for any damages
@@ -118,6 +118,10 @@ namespace Slyvina {
 
 			JT_Entry Entry(std::string Ent);
 			std::shared_ptr<std::vector<JT_Entry>> Entries();
+
+			bool DirectoryExists(std::string Dir);
+
+			VecString Directory(std::string Dir, bool allowrecursive = true);
 
 
 			/// <summary>

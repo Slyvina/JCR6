@@ -1,7 +1,7 @@
 // Lic:
 // JCR6/Source/JCR6_Write.cpp
 // Slyvina - JCR6 - Writer
-// version: 22.12.14
+// version: 22.12.24
 // Copyright (C) 2022 Jeroen P. Broks
 // This software is provided 'as-is', without any express or implied
 // warranty.  In no event will the authors be held liable for any damages
@@ -173,7 +173,7 @@ namespace Slyvina {
 
 		void _JT_Create::AddBank(Units::Bank bnk, std::string Entry, std::string Storage, std::string  Author , std::string Notes ) {
 			auto BT = NewEntry(Entry, Storage, Author, Notes);
-			for (size_t i = 0; i < bnk->Size(), i++) BT->Write(bnk->PeekByte(i));
+			for (size_t i = 0; i < bnk->Size(); i++) BT->Write(bnk->PeekByte(i));
 			BT->Close();
 		}
 
