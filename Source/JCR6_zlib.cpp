@@ -1,7 +1,7 @@
 // Lic:
 // JCR6/Source/JCR6_zlib.cpp
 // Slyvina - JCR6 - Driver for zlib
-// version: 22.12.13
+// version: 22.12.25
 // Copyright (C) 2019, 2022 Jeroen P. Broks
 // This software is provided 'as-is', without any express or implied
 // warranty.  In no event will the authors be held liable for any damages
