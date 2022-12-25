@@ -28,8 +28,7 @@
 #endif
 
 static int JZL_Compress(char* Uncompressed, char* Compressed, int size_uncompressed, std::string _M, std::string _E) {
-    // code comes later
-    uLongf size_compressed = (size_uncompressed * 4) / 3;
+    uLongf size_compressed = ceil((double)size_uncompressed * 1.75); // Another way to do this will be thought of. The way compression drivers are set up now is not fully to my liking.
     int err = compress((Bytef*)Compressed, &size_compressed, (Bytef*)Uncompressed, (uLong)size_uncompressed);
     if (err != Z_OK) {
         std::string e{ "Error by zlib during compression! (" }; e += std::to_string(err); e + ") ";
