@@ -1,8 +1,8 @@
 // Lic:
 // JCR6/Source/JCR6_Core.cpp
 // Slyvina - JCR6 - Core
-// version: 22.12.19
-// Copyright (C) 2022 Jeroen P. Broks
+// version: 23.01.04
+// Copyright (C) 2022, 2023 Jeroen P. Broks
 // This software is provided 'as-is', without any express or implied
 // warranty.  In no event will the authors be held liable for any damages
 // arising from the use of this software.
@@ -24,7 +24,7 @@
 #include <JCR6_Core.hpp>
 
 
-#define JCR6_Debug
+#undef JCR6_Debug
 
 
 #ifdef JCR6_Debug
@@ -141,6 +141,7 @@ namespace Slyvina {
 				fpath = ChReplace(fpath, '\\', '//');
 				if (!Suffixed(fpath, "/")) fpath += "/";
 			}
+			if (!From) { _Error("Cannot patch from null!"); return; }
 			for (auto c : From->ConfigBool) ConfigBool[c.first] = c.second;
 			for (auto c : From->ConfigInt) ConfigInt[c.first] = c.second;
 			for (auto c : From->ConfigString) ConfigString[c.first] = c.second;
@@ -176,6 +177,9 @@ namespace Slyvina {
 				//FlushBlock();
 				bt.seekg(E->Offset(), std::ios::beg);
 				//JT_EntryReader comp{ E.CompressedSize() };
+				Chat("Getting buffer of entry " << _Entry << " from main " << E->MainFile << ";  Size: " << E->RealSize() << "; Compressed: " << E->CompressedSize());
+				if (E->RealSize() < 0) { _NullError("Invalid real size: " + std::to_string(E->RealSize()), E->MainFile, E->Name()); }
+				if (E->CompressedSize() < 0) { _NullError("Invalid compressed size: " + std::to_string(E->CompressedSize()), E->MainFile, E->Name()); }
 				auto comp = new char[E->CompressedSize()];
 				retbuf = new char[E->RealSize()];
 				//data.newbuf(E.RealSize());

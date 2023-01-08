@@ -1,7 +1,7 @@
 // Lic:
 // JCR6/Source/JCR6_RealDir.cpp
 // Slyvina - JCR6 - Driver - Real Directory
-// version: 22.12.25
+// version: 22.12.27
 // Copyright (C) 2022 Jeroen P. Broks
 // This software is provided 'as-is', without any express or implied
 // warranty.  In no event will the authors be held liable for any damages
@@ -38,20 +38,26 @@ namespace Slyvina {
 			auto Ret = std::make_shared<_JT_Dir>();
 			auto FD = GetTree(F);
 			for (auto& Fl : *FD) {
-				auto FullFile = F; if (!Suffixed(F, "/")) F += "/"; FullFile += Fl;
+				auto FullFile = F; if (!Suffixed(FullFile, "/")) FullFile += "/"; FullFile += Fl;
 				if (JCR6_RealDir_AutoMerge && _JT_Dir::Recognize(FullFile) != "NONE") {
 					Ret->Patch(FullFile, Fl + "/");
 				} else {
 					auto Ent{ std::make_shared<_JT_Entry>() };
+					auto sz= FileSize(FullFile);
+					if (sz < 0) {
+						std::cout << "\x07" << "FATAL ERROR! (JCR6 REALDIR)\n\tFile '" << FullFile << "' appears to exist, but gives a negative number ("<<sz<<") for file size!\n";
+						exit(255);
+					}
 					Ret->_Entries[Upper(Fl)] = Ent;
 					Ent->_ConfigString["__Entry"] = Fl;
-					Ent->_ConfigInt["__Size"] = FileSize(FullFile);
-					Ent->_ConfigInt["__CSize"] = Ret->ConfigInt["__Size"];
+					Ent->_ConfigInt["__Size"] = sz;
+					Ent->_ConfigInt["__CSize"] = sz;
 					Ent->_ConfigString["__Storage"] = "Store";
 					Ent->MainFile = FullFile;
 					if (Upper(StripAll(F)) == "DIRINFO") Ret->Comments["Dir: " + F] = FLoadString(FullFile);
 				}
 			}
+			return Ret;
 		}
 
 		void JCR6_InitReadDir() {

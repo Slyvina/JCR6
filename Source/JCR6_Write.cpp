@@ -1,8 +1,8 @@
 // Lic:
 // JCR6/Source/JCR6_Write.cpp
 // Slyvina - JCR6 - Writer
-// version: 22.12.24
-// Copyright (C) 2022 Jeroen P. Broks
+// version: 23.01.04
+// Copyright (C) 2022, 2023 Jeroen P. Broks
 // This software is provided 'as-is', without any express or implied
 // warranty.  In no event will the authors be held liable for any damages
 // arising from the use of this software.
@@ -157,6 +157,22 @@ namespace Slyvina {
 			var s = nb(Entry, Storage, Author, Notes);
 			if (!s) return;
 			if (mybuffer) s->WriteBytes(mybuffer, buffersize);
+			s->Close();
+		}
+
+		void _JT_Create::AddChars(char* mybuffer, uint32 buffersize, std::string Entry, std::string Storage, std::string Author, std::string Notes) {
+			Last()->Error = false;
+			var s = nb(Entry, Storage, Author, Notes);
+			if (!s) return;
+			if (mybuffer) s->WriteChars(mybuffer, buffersize);
+			s->Close();
+		}
+
+		void _JT_Create::AddChars(std::vector<char> mybuffer, std::string Entry, std::string Storage, std::string Author, std::string Notes) {
+			Last()->Error = false;
+			var s = nb(Entry, Storage, Author, Notes);
+			//if (!s) return;
+			s->WriteChars(mybuffer);
 			s->Close();
 		}
 

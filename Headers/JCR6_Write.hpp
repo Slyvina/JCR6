@@ -1,8 +1,8 @@
 // Lic:
 // JCR6/Headers/JCR6_Write.hpp
 // Slyvina - JCR6 - Writer (header)
-// version: 22.12.14
-// Copyright (C) 2022 Jeroen P. Broks
+// version: 23.01.04
+// Copyright (C) 2022, 2023 Jeroen P. Broks
 // This software is provided 'as-is', without any express or implied
 // warranty.  In no event will the authors be held liable for any damages
 // arising from the use of this software.
@@ -129,6 +129,8 @@ namespace Slyvina {
 
 			void AddString(std::string mystring, std::string Entry, std::string Storage = "Store", std::string Author = "", std::string Notes = "");
 			void AddBytes(byte* mybuffer, uint32 buffersize, std::string Entry, std::string Storage = "Store", std::string Author = "", std::string Notes = "");
+			void AddChars(char* mybuffer, uint32 buffersize, std::string Entry, std::string Storage = "Store", std::string Author = "", std::string Notes = "");
+			void AddChars(std::vector<char> mybuffer, std::string Entry, std::string Storage = "Store", std::string Author = "", std::string Notes = "");
 			void AddFile(std::string OriginalFile, std::string Entry, std::string Storage = "Store", std::string Author = "", std::string Notes = "");
 
 			void AddBank(Units::Bank bnk, std::string Entry, std::string Storage = "Store", std::string A = "Author", std::string Notes = "");
@@ -170,6 +172,8 @@ namespace Slyvina {
 			inline void WriteString(std::string s, bool raw = false) { _Buf->Write(s, raw); }
 			inline void WriteBytes(byte* b,uint32 sz) { _Buf->WriteBytes(b, sz); }
 			inline void WriteBytes(std::vector<byte> b) { for (auto bt : b) _Buf->WriteByte(bt); }
+			inline void WriteChars(char* b, uint32 sz) { _Buf->WriteChars(b, sz); }
+			inline void WriteChars(std::vector<char>b) { for (auto bt : b) _Buf->WriteChar(bt); }
 
 			inline void Write(byte b) { WriteByte(b); }
 			inline void Write(int16 i) { WriteInt16(i); }
