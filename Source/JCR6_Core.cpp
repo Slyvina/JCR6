@@ -1,7 +1,7 @@
 // Lic:
 // JCR6/Source/JCR6_Core.cpp
 // Slyvina - JCR6 - Core
-// version: 23.01.04
+// version: 23.01.10
 // Copyright (C) 2022, 2023 Jeroen P. Broks
 // This software is provided 'as-is', without any express or implied
 // warranty.  In no event will the authors be held liable for any damages
@@ -118,7 +118,12 @@ namespace Slyvina {
 
 		std::string _JT_Dir::Recognize(std::string File) {
 			for (auto d : DirDrivers)
-				if (d.second.Recognize(File)) return d.first;
+				if (d.second.Recognize(File)) {
+					Chat("Recognized '" << File << "' as " << d.first);
+					return d.first;
+				} else {
+					Chat("NOT recognized '" << File << "' as " << d.first);
+				}
 			return "NONE";
 		}
 
@@ -371,7 +376,7 @@ namespace Slyvina {
 				}
 			}
 			bt->Close();
-			RecD.Recognized = true;			
+			RecD.Recognized = ret;			
 		}
 
 		static bool ___JCR6Recognize(string File) {
