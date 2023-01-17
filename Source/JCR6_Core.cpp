@@ -117,6 +117,7 @@ namespace Slyvina {
 		
 
 		std::string _JT_Dir::Recognize(std::string File) {
+			__InitJCR6();
 			for (auto d : DirDrivers)
 				if (d.second.Recognize(File)) {
 					Chat("Recognized '" << File << "' as " << d.first);
