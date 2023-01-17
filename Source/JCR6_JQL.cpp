@@ -23,7 +23,7 @@
  * I just copied in my C# code an adapted that to C++
  ********************************************************/
 
-#define DEBUG_JQL
+#undef DEBUG_JQL
 
 
 //using System;
@@ -163,7 +163,7 @@ namespace Slyvina { //namespace UseJCR6 {
                                 ret->Patch(p, fpath);
                             } else {
                                 var rw = ChReplace(Trim(c->parameter.substr(0, to)), '\\', '/'); //c.parameter.Substring(0, to).Trim().Replace("\\", "/");
-                                var tg = ChReplace(Trim(c->commando.substr(to + 1)), '\\', '/'); //c.parameter.Substring(to + 1).Trim().Replace("\\", "/");
+                                var tg = ChReplace(Trim(c->parameter.substr(to + 1)), '\\', '/'); //c.parameter.Substring(to + 1).Trim().Replace("\\", "/");
                                 var p = JCR6_Dir(rw);
                                 if (p == nullptr) {
                                     if (optional) goto einde;
