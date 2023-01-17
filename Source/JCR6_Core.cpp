@@ -108,6 +108,10 @@ namespace Slyvina {
 		}
 		std::shared_ptr<std::vector<JT_Entry>> _JT_Dir::Entries() {
 			auto ret{ make_shared<vector<JT_Entry>>()};
+			if (!this) {
+				JCR6_Panic("Trying to get the entries of a JCR6 that turned out to be null");
+				return nullptr;
+			}
 			for (auto e : _Entries) ret->push_back(e.second);
 			return ret;
 		}
