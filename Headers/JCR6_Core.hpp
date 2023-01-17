@@ -114,7 +114,12 @@ namespace Slyvina {
 			/// </summary>
 			/// <param name="Entry"></param>
 			/// <returns>true if the entry is found and false if not.</returns>
-			inline bool EntryExists(std::string Entry) { return _Entries.count(EName(Entry)); }
+			inline bool EntryExists(std::string Entry) { 
+				if (!this) {
+					JCR6_Panic("EntryExists(\"" + Entry + "\"): Resource object appears to be null!", "??", Entry); return false;
+				}
+				return _Entries.count(EName(Entry)); 
+			}
 
 			JT_Entry Entry(std::string Ent);
 			std::shared_ptr<std::vector<JT_Entry>> Entries();
