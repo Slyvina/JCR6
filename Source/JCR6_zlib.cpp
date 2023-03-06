@@ -1,8 +1,8 @@
 // Lic:
 // JCR6/Source/JCR6_zlib.cpp
 // Slyvina - JCR6 - Driver for zlib
-// version: 22.12.25
-// Copyright (C) 2019, 2022 Jeroen P. Broks
+// version: 23.03.06
+// Copyright (C) 2019, 2022, 2023 Jeroen P. Broks
 // This software is provided 'as-is', without any express or implied
 // warranty.  In no event will the authors be held liable for any damages
 // arising from the use of this software.
@@ -57,7 +57,7 @@ static bool JZL_Expand(char* Compressed, char* UnCompressed, int size_compressed
     uLongf szc = size_uncompressed;
     int err = uncompress((Bytef*)UnCompressed, &szc, (Bytef*)Compressed, size_compressed);
     if (err != Z_OK) {
-        std::string e{ "Error by zlib during expanding! (" }; e += std::to_string(err); e + ") ";
+        std::string e{ "Error by zlib during expanding! (" }; e += std::to_string(err); e += ") ";
         switch (err) {
         case Z_ERRNO: e += "ERRNO (???)"; break;
         case Z_STREAM_ERROR: e += "Stream Error"; break;
