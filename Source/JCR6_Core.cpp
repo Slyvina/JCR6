@@ -1,7 +1,7 @@
 // Lic:
 // JCR6/Source/JCR6_Core.cpp
 // Slyvina - JCR6 - Core
-// version: 23.01.17
+// version: 23.03.06
 // Copyright (C) 2022, 2023 Jeroen P. Broks
 // This software is provided 'as-is', without any express or implied
 // warranty.  In no event will the authors be held liable for any damages
@@ -100,6 +100,10 @@ namespace Slyvina {
 			if (_LastBlockBuf) delete[] _LastBlockBuf;
 		}
 		JT_Entry _JT_Dir::Entry(string Ent) {
+			if (!this) {
+				JCR6_Panic("Trying to get an entry from a JCR6 resource that turned out to be null");
+				return nullptr;
+			}
 			if (!EntryExists(Ent)) {
 				_Error("Entry not found!",__StartMainFile,Ent);
 				return nullptr;
@@ -156,6 +160,7 @@ namespace Slyvina {
 			for (auto c : From->ConfigInt) ConfigInt[c.first] = c.second;
 			for (auto c : From->ConfigString) ConfigString[c.first] = c.second;
 			for (auto c : From->Comments) Comments[c.first] = c.second;
+			for (auto c : From->Blocks) Blocks[c.first] = c.second;
 			for (auto e : From->_Entries) {
 				auto ent = e.second->Copy();
 				ent->_ConfigString["__Entry"] = fpath + ent->_ConfigString["__Entry"];
@@ -202,6 +207,7 @@ namespace Slyvina {
 			}
 			std::string BlockTag{ std::to_string(E->Block()) + ":" + E->MainFile };
 			if (!Blocks.count(BlockTag)) {
+				//cout << "???\n"; for (auto& DBG : Blocks) { cout << BlockTag << "!=" << DBG.first << endl; } // debug				
 				_NullError("Block for entry " + E->Name() + " not found: " + BlockTag,E->MainFile,_Entry);
 				//return;
 			}
@@ -310,6 +316,13 @@ namespace Slyvina {
 				return _ConfigInt["__Offset"];
 			else
 				return _ConfigInt["__Offset"] + Correction;			
+		}
+
+		void _JT_Entry::Offset(int32 _offs) {
+			if (Block())
+				_ConfigInt["__Offset"] = _offs;
+			else
+				_ConfigInt["__Offset"] = _offs - Correction;
 		}
 
 		JT_Entry _JT_Entry::Copy() {
@@ -498,6 +511,8 @@ namespace Slyvina {
 						var ftag = bt->ReadByte();
 						nb->Correction = D.Correction;
 						ret->Blocks[TrSPrintF("%d:%s", ID, File.c_str())] = nb;//ret.Blocks[$"{ID}:{file}"] = nb;
+						//cout << "Block: " << TrSPrintF("%d:%s", ID, File.c_str()) << endl;
+						//for (auto& DBG : ret->Blocks) cout << "Block dbg: " << DBG.first << "!\n";
 						//Console.WriteLine($"Block ftag{ftag}");
 						while (ftag != 255) {
 							//chats("FILE TAG %d", ftag)
@@ -577,11 +592,11 @@ namespace Slyvina {
 						ret->_Entries[centry] = nb;
 					}
 					//	   break;
-					else if (Tag == "COMMENT") { //case "COMMENT":
+					else if (tag == "COMMENT") { //case "COMMENT":
 						var commentname = bt->ReadString();
 						ret->Comments[commentname] = bt->ReadString();
 						//break;
-					} else if (Tag == "IMPORT" || Tag == "REQUIRE") {
+					} else if (tag == "IMPORT" || tag == "REQUIRE") {
 						//case "IMPORT":
 						//case "REQUIRE":
 							//if impdebug {
