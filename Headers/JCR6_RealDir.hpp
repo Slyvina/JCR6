@@ -1,8 +1,8 @@
 // Lic:
 // JCR6/Headers/JCR6_RealDir.hpp
 // Slyvina - JCR6 - Driver - Real Directory (header)
-// version: 22.12.27
-// Copyright (C) 2022 Jeroen P. Broks
+// version: 23.03.06
+// Copyright (C) 2022, 2023 Jeroen P. Broks
 // This software is provided 'as-is', without any express or implied
 // warranty.  In no event will the authors be held liable for any damages
 // arising from the use of this software.
@@ -22,7 +22,7 @@
 
 namespace Slyvina { 
 	namespace JCR6 { 
-		void JCR6_InitReadDir(); 
+		void JCR6_InitRealDir(); 
 		JT_Dir GetDirAsJCR(std::string path, bool AllowMerge = true);
 		extern bool JCR6_RealDir_AutoMerge;;
 	} 
