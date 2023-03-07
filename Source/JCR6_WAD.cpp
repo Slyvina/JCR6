@@ -20,7 +20,7 @@
 #include <JCR6_WAD.hpp>
 #include <SlyvStream.hpp>
 
-#define WAD_Debug
+#undef WAD_Debug
 
 using namespace std;
 using namespace Slyvina::Units;
