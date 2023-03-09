@@ -75,7 +75,7 @@ namespace Slyvina {
 				string FName = CName; //BT->ReadString(8);
 				if (InMap.size()) {
 					if (MapEntry(FName)) {
-						NE(ret, file, InMap + "/" + FName, FSize, FOffs + offset);
+						NE(ret, file, prefix + InMap + "/" + FName, FSize, FOffs + offset);
 					} else {
 						InMap = "";
 					}
@@ -94,7 +94,7 @@ namespace Slyvina {
 					if (EmptyFileIsDir && FSize == 0) {
 						InDir = FName + "/";
 					} else {
-						NE(ret, file, InDir + FName, FSize, FOffs + offset);
+						NE(ret, file, prefix + InDir + FName, FSize, FOffs + offset);
 					}
 				}
 
@@ -129,4 +129,4 @@ namespace Slyvina {
 		}
 #pragma endregion
 	}
-}
+ }
