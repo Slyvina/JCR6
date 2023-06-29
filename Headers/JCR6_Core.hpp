@@ -1,7 +1,7 @@
 // Lic:
 // JCR6/Headers/JCR6_Core.hpp
 // Slyvina - JCR6 - Core (header)
-// version: 23.03.06
+// version: 23.06.23
 // Copyright (C) 2022, 2023 Jeroen P. Broks
 // This software is provided 'as-is', without any express or implied
 // warranty.  In no event will the authors be held liable for any damages
@@ -19,6 +19,10 @@
 // EndLic
 
 #pragma once
+
+// This definition is for libraries which can optionally use JCR6. Please note that you must include the core header then before you include the library's header.
+#define Slyvina_JCR6_Core_Present
+
 #include <Slyvina.hpp>
 #include <SlyvString.hpp>
 #include <SlyvBank.hpp>
@@ -200,12 +204,15 @@ namespace Slyvina {
 			inline std::string Name() { return _ConfigString["__Entry"]; }
 			inline int32 CompressedSize() { return _ConfigInt["__CSize"]; }
 			inline int32 RealSize() { return _ConfigInt["__Size"]; }
+			inline std::string Author() { return _ConfigString["__Author"]; }
+			inline std::string Notes() { return _ConfigString["__Notes"]; }
 			inline void Name(std::string _n) { _ConfigString["__Entry"] = Units::ChReplace(_n, '\\', '/'); };
 			inline void RealSize(int32 _s){ _ConfigInt["__Size"]= (int)_s; }
 			inline void CompressedSize(int32 _s) { _ConfigInt["__CSize"] = (int)_s; }
 			inline void Author(std::string _a) { _ConfigString["__Author"] = _a; }
 			inline void Notes(std::string _n) { _ConfigString["__Notes"] = _n; }
 			inline void Storage(std::string _st) { _ConfigString["__Storage"] = _st; }
+			
 			
 			JT_Entry Copy();
 		};

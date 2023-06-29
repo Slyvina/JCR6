@@ -1,7 +1,7 @@
 // Lic:
 // JCR6/Headers/JCR6_Write.hpp
 // Slyvina - JCR6 - Writer (header)
-// version: 23.03.06
+// version: 23.06.23
 // Copyright (C) 2022, 2023 Jeroen P. Broks
 // This software is provided 'as-is', without any express or implied
 // warranty.  In no event will the authors be held liable for any damages
@@ -169,6 +169,7 @@ namespace Slyvina {
 			inline void WriteInt32(int32 i) { _Buf->WriteInt32(i); }
 			inline void WriteInt64(int64 i) { _Buf->WriteInt64(i); }
 			inline void WriteInt(int32 i) { _Buf->WriteInt32(i); }
+			inline void WriteUInt32(uint32 i) { _Buf->WriteUInt32(i); }
 			inline void WriteString(std::string s, bool raw = false) { _Buf->Write(s, raw); }
 			inline void WriteBytes(byte* b,uint32 sz) { _Buf->WriteBytes(b, sz); }
 			inline void WriteBytes(std::vector<byte> b) { for (auto bt : b) _Buf->WriteByte(bt); }
@@ -179,6 +180,7 @@ namespace Slyvina {
 			inline void Write(int16 i) { WriteInt16(i); }
 			inline void Write(int32 i) { WriteInt32(i); }
 			inline void Write(int64 i) { WriteInt64(i); }
+			//inline void Write(uint64 i) { WriteUInt32(i); }
 			inline void Write(std::string s, bool raw = false) { WriteString(s, raw); }
 			inline void Write(StringMap sm) { _Buf->WriteStringMap(sm); }
 

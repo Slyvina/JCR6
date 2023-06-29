@@ -1,7 +1,7 @@
 // Lic:
 // JCR6/Source/JCR6_WAD.cpp
 // Slyvina - JCR6 - Where's All The Data
-// version: 23.03.07
+// version: 23.05.11
 // Copyright (C) 2023 Jeroen P. Broks
 // This software is provided 'as-is', without any express or implied
 // warranty.  In no event will the authors be held liable for any damages
