@@ -1,7 +1,7 @@
 // Lic:
 // JCR6/Source/JCR6_JQL.cpp
 // JCR Quick Link
-// version: 23.01.17
+// version: 23.07.19
 // Copyright (C) 2023 Jeroen P. Broks
 // This software is provided 'as-is', without any express or implied
 // warranty.  In no event will the authors be held liable for any damages
@@ -36,6 +36,7 @@
 
 #include <JCR6_Core.hpp>
 
+#include <SlyvDir.hpp>
 #include <SlyvString.hpp>
 #include <SlyvStream.hpp>
 #include <SlyvBank.hpp>
@@ -212,6 +213,47 @@ namespace Slyvina { //namespace UseJCR6 {
                             e->_ConfigString["__Author"] = author;
                             ret->_Entries[Upper(e->Name())] = e;
                             //break;
+                        }
+                        ccase("RAWDIR") {
+                            var p = FindFirst(c->parameter, '>');
+                            //var rw = ChReplace(c->parameter, '\\', '/');
+                            //var tg = rw;
+                            string ds{ "" }, dt{ "" };
+                            if (p < 0) 
+                                ds = c->parameter;
+                            else {
+                                ds = ChReplace(Trim(c->parameter.substr(0, p)), '\\', '/'); //c.parameter.Substring(0, to).Trim().Replace("\\", "/");
+                                dt = ChReplace(Trim(c->parameter.substr(p + 1)), '\\', '/')+"/";
+                            }
+                            if (DirectoryExists(ds)) {
+                                auto p = GetTree(ds);
+                                for (auto f : *p) {
+                                    string rw{ ds + "/" + f };
+                                    if (_JT_Dir::Recognize(rw)!="NONE") {
+                                        var ijcr = JCR6_Dir(rw);
+                                        for(var eij : ijcr->_Entries) {
+                                            auto  nname{ dt + "/" + f + "/" + eij.second->Name() };
+                                            while (nname[0] == '/') nname = nname.substr(1);
+                                            eij.second->Name(nname);
+                                            ret->_Entries[Upper(eij.second->Name())] = eij.second;
+                                        }
+                                    } else {
+                                        var e = make_shared<_JT_Entry>(); //= new TJCREntry();
+                                        e->_ConfigString["__Entry"] = fpath + dt;
+                                        if (e->Name().size()) e->_ConfigString["__Entry"] += "/";
+                                        e->_ConfigString["__Entry"] += f; //e.Entry = tg;
+                                        //cout << "Raw: " << rw << " to " << e->Name() << "\n"; // debug only
+                                        e->MainFile = rw;
+                                        e->_ConfigString["__Storage"] = "Store";
+                                        e->_ConfigInt["__Offset"] = 0;
+                                        e->_ConfigInt["__Size"] = FileSize(rw); //(int)new FileInfo(rw).Length;
+                                        e->_ConfigInt["__CSize"] = e->RealSize();
+                                        e->_ConfigString["__Notes"] = notes;
+                                        e->_ConfigString["__Author"] = author;
+                                        ret->_Entries[Upper(e->Name())] = e;
+                                    }
+                                }
+                            } else if (!optional) throw runtime_error("Required raw Directory '"+ds+"' not found");
                         }
                         ccase2("TEXT", "TXT") {
                             var tg = ChReplace(Trim(c->parameter), '\\', '/'); //c.parameter.Trim().Replace("\\", "/");
