@@ -1,7 +1,7 @@
 // Lic:
 // JCR6/Source/JCR6_JQL.cpp
 // JCR Quick Link
-// version: 23.07.19
+// version: 23.08.01
 // Copyright (C) 2023 Jeroen P. Broks
 // This software is provided 'as-is', without any express or implied
 // warranty.  In no event will the authors be held liable for any damages
@@ -62,6 +62,7 @@ using namespace Slyvina::Units;
 namespace Slyvina { //namespace UseJCR6 {
     namespace JCR6 {
 
+#pragma region JQL
         //class JCR_QuickLink :TJCRBASEDRIVER {
 
         class _QP {
@@ -239,7 +240,8 @@ namespace Slyvina { //namespace UseJCR6 {
                                         }
                                     } else {
                                         var e = make_shared<_JT_Entry>(); //= new TJCREntry();
-                                        e->_ConfigString["__Entry"] = fpath + dt;
+                                        var ename{ StReplace(fpath + dt,"//","/") };
+                                        e->_ConfigString["__Entry"] = ename;
                                         if (e->Name().size()) e->_ConfigString["__Entry"] += "/";
                                         e->_ConfigString["__Entry"] += f; //e.Entry = tg;
                                         //cout << "Raw: " << rw << " to " << e->Name() << "\n"; // debug only
@@ -350,19 +352,74 @@ namespace Slyvina { //namespace UseJCR6 {
             }
         }
 
+
+#pragma endregion
+
+#pragma region JSQL
+        bool JSQL_Recognize(std::string file) {
+            if (!FileExists(file)) return false;
+            return (Left(Upper(FLoadString(file)), 5) == "JSQL:");
+        }
+
+        JT_Dir JSQL_Dir(std::string file, std::string fpath) {
+            auto content{ FLoadString(file) };
+            auto lfile{ Trim(Right(content,content.size() - 5)) };
+            if (DirectoryExists(lfile)) {
+                fpath = ChReplace(fpath, '\\', '/');
+                if (!Suffixed(fpath, "/")) fpath += "/";
+                var ret = new _JT_Dir();
+                var d = GetTree(lfile);
+                for(var f : *d) {
+                    var e = make_shared<_JT_Entry>();
+                    e->MainFile = lfile + "/" + f;
+                    e->Name(StripDir(fpath+f));
+                    e->Storage("Store");
+                    e->RealSize( (int)FileSize(e->MainFile));
+                    e->CompressedSize(e->RealSize());
+                    e->Notes("Linked to by: " + file);
+                    ret->_Entries[Upper(e->Name())] = e;
+                }
+                return std::shared_ptr<_JT_Dir>(ret);
+            }
+            if (_JT_Dir::Recognize(lfile) == "NONE") {
+                fpath = ChReplace(fpath, '\\', '/');
+                if (!Suffixed(fpath, "/")) fpath += "/";
+                auto ret{ make_shared<_JT_Dir>() };
+                auto e{ make_shared<_JT_Entry>() };
+                e->Name(fpath + StripDir(lfile));
+                e->MainFile = lfile;
+                e->Storage("Store");
+                e->RealSize(FileSize(lfile));
+                e->CompressedSize(e->RealSize());
+                e->Notes("Linked to by: " + file);
+                ret->_Entries[Upper(e->Name())] = e;
+                return ret;
+            }
+            return JCR6_Dir(file, fpath);
+        }
+        
+#pragma endregion
+
+#pragma region Ini
         //public JCR_QuickLink() {
         //    JCR6.FileDrivers["JCR6 Quick Link"] = this;
         //}
         void InitJQL() {
             Chat("Init JQL");
             JD_DirDriver JQL;
-
             JQL.Name = "JQL";
             JQL.Recognize = JQL_Recognize;
             JQL.Dir = JQL_Dir;
-
             RegisterDirDriver(JQL);
+
+            Chat("Init JSQL");
+            JD_DirDriver JSQL;
+            JSQL.Name = "JSQL";
+            JSQL.Recognize = JSQL_Recognize;
+            JSQL.Dir = JSQL_Dir;
+            RegisterDirDriver(JSQL);
+
         }
     }
-
+#pragma endregion
 }
