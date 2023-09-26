@@ -1,7 +1,7 @@
 // Lic:
 // JCR6/Headers/JCR6_Core.hpp
 // Slyvina - JCR6 - Core (header)
-// version: 23.06.23
+// version: 23.08.01
 // Copyright (C) 2022, 2023 Jeroen P. Broks
 // This software is provided 'as-is', without any express or implied
 // warranty.  In no event will the authors be held liable for any damages
@@ -212,6 +212,8 @@ namespace Slyvina {
 			inline void Author(std::string _a) { _ConfigString["__Author"] = _a; }
 			inline void Notes(std::string _n) { _ConfigString["__Notes"] = _n; }
 			inline void Storage(std::string _st) { _ConfigString["__Storage"] = _st; }
+
+			//std::string& Entry{_ConfigString["__Entry"] }; // Does this do what I think (and hope) it does?
 			
 			
 			JT_Entry Copy();
