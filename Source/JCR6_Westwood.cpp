@@ -1,7 +1,7 @@
 // Lic:
 // JCR6/Source/JCR6_Westwood.cpp
 // Slyvina - JCR6 - Westwood PAK support
-// version: 23.03.06
+// version: 23.10.08
 // Copyright (C) 2023 Jeroen P. Broks
 // This software is provided 'as-is', without any express or implied
 // warranty.  In no event will the authors be held liable for any damages
@@ -104,7 +104,7 @@ namespace Slyvina {
 
                 var Position = BT->Position();
                 // Trap for version 2 and 3 PAK files.
-                if (Ent->offset > BT->Size()) {
+                if (Ent->offset > BT->Size()) {                    
                     Error("Entry offset beyond EOF.");
                     return;
                 }
