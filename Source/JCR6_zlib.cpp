@@ -1,7 +1,7 @@
 // Lic:
 // JCR6/Source/JCR6_zlib.cpp
 // Slyvina - JCR6 - Driver for zlib
-// version: 23.03.06
+// version: 23.10.08
 // Copyright (C) 2019, 2022, 2023 Jeroen P. Broks
 // This software is provided 'as-is', without any express or implied
 // warranty.  In no event will the authors be held liable for any damages
@@ -81,6 +81,9 @@ static bool JZL_Expand(char* Compressed, char* UnCompressed, int size_compressed
 namespace Slyvina {
     namespace JCR6 {
         void init_zlib() {
+            static bool done{ false };
+            if (done) return;
+            done = true;
             JC_CompressDriver Driver;
             Driver.Compress = JZL_Compress;
             Driver.Expand = JZL_Expand;
