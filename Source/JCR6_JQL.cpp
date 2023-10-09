@@ -1,7 +1,7 @@
 // Lic:
 // JCR6/Source/JCR6_JQL.cpp
 // JCR Quick Link
-// version: 23.08.01
+// version: 23.10.08
 // Copyright (C) 2023 Jeroen P. Broks
 // This software is provided 'as-is', without any express or implied
 // warranty.  In no event will the authors be held liable for any damages
@@ -250,6 +250,7 @@ namespace Slyvina { //namespace UseJCR6 {
                                         e->_ConfigInt["__Offset"] = 0;
                                         e->_ConfigInt["__Size"] = FileSize(rw); //(int)new FileInfo(rw).Length;
                                         e->_ConfigInt["__CSize"] = e->RealSize();
+                                        e->_ConfigInt["__Offset"] = 0;
                                         e->_ConfigString["__Notes"] = notes;
                                         e->_ConfigString["__Author"] = author;
                                         ret->_Entries[Upper(e->Name())] = e;
