@@ -1,7 +1,7 @@
 // Lic:
 // JCR6/Source/JCR6_Core.cpp
 // Slyvina - JCR6 - Core
-// version: 23.03.06
+// version: 23.12.24
 // Copyright (C) 2022, 2023 Jeroen P. Broks
 // This software is provided 'as-is', without any express or implied
 // warranty.  In no event will the authors be held liable for any damages
@@ -179,6 +179,10 @@ namespace Slyvina {
 			auto E = Entry(_Entry);
 			//if (JAMJCR_Error != "" && JAMJCR_Error != "Ok") return;
 			if (LastError.Error) return nullptr;
+			if (!E) {
+				JCR6_Panic("Trouble getting entry data for entry", "???", _Entry);
+				return nullptr;
+			}
 			std::string storage{ E->_ConfigString["__Storage"] };
 			if (!CompDrivers.count(storage)) {
 				std::string e = "Unknown compression method: "; e += storage;
