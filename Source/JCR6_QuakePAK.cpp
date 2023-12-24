@@ -1,7 +1,7 @@
 // Lic:
 // JCR6/Source/JCR6_QuakePAK.cpp
 // QuakePAK driver for JCR6
-// version: 23.06.23
+// version: 23.11.21
 // Copyright (C) 2023 Jeroen P. Broks
 // This software is provided 'as-is', without any express or implied
 // warranty.  In no event will the authors be held liable for any damages
@@ -24,7 +24,7 @@
 
 using namespace Slyvina::Units;
 
-#define Quake_Debug
+#undef Quake_Debug
 
 #ifdef Quake_Debug
 #define Chat(a) std::cout << "\x1b[33mQuake DEBUG>\x1b[0m\t"<<a<<"\n"
