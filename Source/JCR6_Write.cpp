@@ -1,8 +1,8 @@
 // Lic:
 // JCR6/Source/JCR6_Write.cpp
 // Slyvina - JCR6 - Writer
-// version: 23.01.04
-// Copyright (C) 2022, 2023 Jeroen P. Broks
+// version: 24.02.24
+// Copyright (C) 2022, 2023, 2024 Jeroen P. Broks
 // This software is provided 'as-is', without any express or implied
 // warranty.  In no event will the authors be held liable for any damages
 // arising from the use of this software.
@@ -420,7 +420,8 @@ namespace Slyvina {
 				NEntry->_ConfigInt["__Offset"] = (int)_BlockStream->Position(); //Offset = (int)parent.mystream.Position,
 				NEntry->_ConfigString["__Author"] = _Author;
 				NEntry->_ConfigString["__Notes"] = _Notes;
-				NEntry->_ConfigString["__MD5HASH"] = hash;
+				NEntry->_ConfigString["__MD5HASH"] = hash;				
+				NEntry->_ConfigString["__Storage"] = _Parent->Blocks[_Block]->Storage();
 
 				NEntry->_ConfigInt["__Block"] = (int)_Block;
 				_BlockStream->WriteChars(_Buf->DirectX().get());
