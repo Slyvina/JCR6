@@ -191,7 +191,7 @@ namespace Slyvina {
 
 		class _JT_Entry {
 		public:
-			static JT_Entry Create(std::string Name, JT_Dir parent, bool overwrite=true);
+			static JT_Entry Create(std::string Name, JT_Dir parent, bool overwrite = true);
 			static inline JT_Entry Create() { return std::make_shared<_JT_Entry>(); }
 			std::string MainFile{""};
 			std::map<std::string, std::string> _ConfigString;
