@@ -206,6 +206,7 @@ namespace Slyvina {
 			inline int32 RealSize() { return _ConfigInt["__Size"]; }
 			inline std::string Author() { return _ConfigString["__Author"]; }
 			inline std::string Notes() { return _ConfigString["__Notes"]; }
+			inline std::string Storage() { return _ConfigString["__Storage"]; }
 			inline void Name(std::string _n) { _ConfigString["__Entry"] = Units::ChReplace(_n, '\\', '/'); };
 			inline void RealSize(int32 _s){ _ConfigInt["__Size"]= (int)_s; }
 			inline void CompressedSize(int32 _s) { _ConfigInt["__CSize"] = (int)_s; }
