@@ -90,6 +90,7 @@ namespace Slyvina {
 
 		}
 		std::map<std::string, JC_CompressDriver>* GetCompDrivers() {
+			__InitJCR6();
 			return &CompDrivers;
 		}
 #pragma endregion
