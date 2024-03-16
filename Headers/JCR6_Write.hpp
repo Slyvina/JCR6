@@ -211,7 +211,11 @@ namespace Slyvina {
 			void Close();
 		};
 		inline JT_CreateStream NewCreateStream(_JT_Create* theparent, std::string theentry, std::string thestorage, std::string theauthor = "", std::string thenotes = "", Units::Endian theendian = Units::Endian::Little) {
-			auto ret = std::make_shared<_JT_CreateStream>(theparent, theentry, thestorage, theauthor, thenotes, theendian);
+			//auto ret = std::make_shared<_JT_CreateStream>(theparent, theentry, thestorage, theauthor, thenotes, theendian);
+			if (!theparent) {
+				JCR6_Panic("Trying to create a new stream in a null-JCR6CreateDir", "???", theentry); return nullptr;
+			}
+			JT_CreateStream ret{ new _JT_CreateStream(theparent, theentry, thestorage, theauthor, thenotes, theendian) };
 			theparent->OpenEntries[theentry] = ret;
 			return ret;
 		}
@@ -265,6 +269,13 @@ namespace Slyvina {
 				auto s = nb(Entry, Author, Notes);
 				if (!s) return;
 				s->WriteBytes(mybuffer);
+				s->Close();
+			}
+
+			inline void AddBank(Units::Bank mybank, std::string Entry, std::string Author = "", std::string Notes = "") {
+				auto s = nb(Entry, Author, Notes);
+				if (!s) return;
+				for (size_t p = 0; p < mybank->Size(); p++) s->WriteByte(mybank->ReadByte());
 				s->Close();
 			}
 

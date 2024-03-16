@@ -41,7 +41,10 @@ namespace Slyvina {
 
 
 		JT_CreateStream _JT_Create::nb(std::string Entry, std::string Storage, std::string Author, std::string Notes, Units::Endian _Endian) {
-			if (!GetCompDrivers()->count(Storage)) { JCR6_Panic("I cannot compress with unknown storage method \"" + Storage + "\"", _MainFile, Entry); return nullptr; }
+			if (!GetCompDrivers()->count(Storage)) { 
+				JCR6_Panic("I cannot compress with unknown storage method \"" + Storage + "\"", _MainFile, Entry); 
+				return nullptr; 
+			}
 			//return std::make_shared<_JT_CreateStream>(this, Entry, Storage, Author, Notes, _Endian);
 			return NewCreateStream(this, Entry, Storage, Author, Notes, _Endian);
 		}
