@@ -31,6 +31,7 @@
 //using System.Text;
 //using TrickyUnits;
 
+#include <string.h>
 #include <string>
 #include <memory>
 

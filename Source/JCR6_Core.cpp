@@ -18,6 +18,8 @@
 // 3. This notice may not be removed or altered from any source distribution.
 // EndLic
 
+#include <cstring>
+
 #include <SlyvString.hpp>
 #include <SlyvStream.hpp>
 #include <SlyvBank.hpp>
@@ -153,7 +155,7 @@ namespace Slyvina {
 
 		void _JT_Dir::Patch(JT_Dir From, std::string fpath) {
 			if (fpath.size()) {
-				fpath = ChReplace(fpath, '\\', '//');
+				fpath = ChReplace(fpath, '\\', '/');
 				if (!Suffixed(fpath, "/")) fpath += "/";
 			}
 			if (!From) { _Error("Cannot patch from null!"); return; }

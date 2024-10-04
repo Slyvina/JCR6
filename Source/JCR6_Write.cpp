@@ -359,8 +359,17 @@ namespace Slyvina {
 				var cmpbuff = _cmpbuff;
 				var cdr = GetCompDrivers();
 				var &cd = (*cdr)[_Storage];
-				var astorage = _Storage;
-				var cmpsize2 = cd.Compress(rawbuff, _cmpbuff, rawsize, _Parent->MainFile(), _Entry);
+				var astorage{ _Storage };
+				/*std::cout << " ::" << astorage << "/" << _Storage << " -> " << rawsize << ":: ";
+				if (rawsize < 100) {
+					// Not gonna compress (too small)
+					astorage = "Store";
+					cd = (*cdr)["Store"];
+					printf("< Too small: %d >" , (int)rawsize); // DEBUG ONLY!
+				} 
+				//*/
+				int cmpsize2 = cmpsize;
+				if (rawsize>25) cmpsize2 = cd.Compress(rawbuff, _cmpbuff, rawsize, _Parent->MainFile(), _Entry);
 				/*
 				if (cmpbuff == null) {
 					JCR6.Fail("Compression buffer failed to be created!", "?", entry);
