@@ -1,8 +1,8 @@
 // Lic:
 // JCR6/Source/JCR6_JQL.cpp
 // JCR Quick Link
-// version: 23.10.08
-// Copyright (C) 2023 Jeroen P. Broks
+// version: 24.07.18
+// Copyright (C) 2023, 2024 Jeroen P. Broks
 // This software is provided 'as-is', without any express or implied
 // warranty.  In no event will the authors be held liable for any damages
 // arising from the use of this software.
@@ -60,367 +60,368 @@ using namespace Slyvina::Units;
 
 
 namespace Slyvina { //namespace UseJCR6 {
-    namespace JCR6 {
+	namespace JCR6 {
 
 #pragma region JQL
-        //class JCR_QuickLink :TJCRBASEDRIVER {
+		//class JCR_QuickLink :TJCRBASEDRIVER {
 
-        class _QP {
-        public:
-            std::string commando{};
-            std::string parameter{};
-            _QP(std::string p) {
-                var i{ FindFirst(p,':') }; //= p.IndexOf(':');
-                if (i < 0) {
-                    commando = Upper(p); //p.ToUpper();
-                    parameter = "";
-                } else {
-                    commando = Upper(p.substr(0, i));
-                    parameter = p.substr(i + 1);
-                }
-            }
-        };
-        typedef shared_ptr<_QP> QP;
+		class _QP {
+		public:
+			std::string commando{};
+			std::string parameter{};
+			_QP(std::string p) {
+				var i{ FindFirst(p,':') }; //= p.IndexOf(':');
+				if (i < 0) {
+					commando = Upper(p); //p.ToUpper();
+					parameter = "";
+				} else {
+					commando = Upper(p.substr(0, i));
+					parameter = p.substr(i + 1);
+				}
+			}
+		};
+		typedef shared_ptr<_QP> QP;
 
 
-        //    string RL(QuickStream BT, bool trim = true) {
-        string RL(InFile BT, bool trim = true) {
-            string r; //var r = new StringBuilder();
-            char b = 0;
-            while (true) {
-                if (BT->EndOfFile()) break; //if (BT.EOF) break;
-                b = BT->ReadChar(); //BT.ReadByte();
-                if (b == 10) break;
-                if (b != 13) r += b;//r.Append((char)b);
-            }
-            if (trim) return Trim(r);//r.ToString().Trim();
-            return r; // .ToString();
-        }
+		//    string RL(QuickStream BT, bool trim = true) {
+		string RL(InFile BT, bool trim = true) {
+			string r; //var r = new StringBuilder();
+			char b = 0;
+			while (true) {
+				if (BT->EndOfFile()) break; //if (BT.EOF) break;
+				b = BT->ReadChar(); //BT.ReadByte();
+				if (b == 10) break;
+				if (b != 13) r += b;//r.Append((char)b);
+			}
+			if (trim) return Trim(r);//r.ToString().Trim();
+			return r; // .ToString();
+		}
 
-        QP RQP(InFile BT) { return make_shared<_QP>(RL(BT)); }
+		QP RQP(InFile BT) { return make_shared<_QP>(RL(BT)); }
 
-        bool JQL_Recognize(string file) { //public override bool Recognize(string file) {
-            Chat("Trying to recognize " << file);
-            InFile BT{ nullptr }; //QuickStream BT = null;
-            //try {
-                //Console.WriteLine($"JQL Recognize {File.Exists(file)}");
-            if (!FileExists(file)) {
-                Chat("File not found");
-                return false;
-            }
-            Chat("Reading");
-            BT = ReadFile(file); //QuickStream.ReadFile(file);
-            string s;
-            do {
-                Chat("ReadLine");
-                s = RL(BT);
-                //Console.WriteLine($"_{s}_");
-                Chat("Got> " << s);
-                if (s != "" && (!Prefixed(s, "#"))) return s == "JQL";
-            } while (!BT->EndOfFile());
-            return false;
-            //} finally {
-                //if (BT != nullptr) BT->Close();
-            //}
-        }
+		bool JQL_Recognize(string file) { //public override bool Recognize(string file) {
+			Chat("Trying to recognize " << file);
+			InFile BT{ nullptr }; //QuickStream BT = null;
+			//try {
+				//Console.WriteLine($"JQL Recognize {File.Exists(file)}");
+			if (!FileExists(file)) {
+				Chat("File not found");
+				return false;
+			}
+			Chat("Reading");
+			BT = ReadFile(file); //QuickStream.ReadFile(file);
+			string s;
+			do {
+				Chat("ReadLine");
+				s = RL(BT);
+				//Console.WriteLine($"_{s}_");
+				Chat("Got> " << s);
+				if (s != "" && (!Prefixed(s, "#"))) return s == "JQL";
+			} while (!BT->EndOfFile());
+			return false;
+			//} finally {
+				//if (BT != nullptr) BT->Close();
+			//}
+		}
 
-        JT_Dir JQL_Dir(string file, string fpath) { //public override TJCRDIR Dir(string file) {
-            InFile BT = nullptr; //QuickStream BT = null;
-            map<string, JT_Dir> MapFrom{};
-            JT_Dir From{ nullptr };
-            try {
-                BT = ReadFile(file);
-                var ret = make_shared<_JT_Dir>(); //= new TJCRDIR();
-                string s{ "" };
-                do {
-                    if (BT->EndOfFile()) throw runtime_error("JQL heading not found"); //throw new Exception("JQL heading not found!");
-                    s = RL(BT);
-                } while (s == "" || Prefixed(s, "#"));
-                if (s != "JQL") throw runtime_error("JQL not properly headed!");
-                var optional = true;
-                var author = string("");
-                var notes = string("");
-                while (!BT->EndOfFile()) {
-                    s = RL(BT);
-                    var c = _new(_QP, s);
-                    if (s != "" && (!Prefixed(s, "#"))) {
-                        //switch (c->commando) {
-                        if (false) {}
-                        ccase2("REQUIRED", "REQ") {
-                            optional = false;
-                            //break;
-                        }
-                        ccase2("OPTIONAL", "OPT") {
-                            optional = true;
-                            //break;
-                        }
-                        ccase("PATCH") {
-                            var to = FindFirst(c->parameter, '>'); //c.parameter.IndexOf('>');
-                            if (to < 0) {
-                                var p = JCR6_Dir(c->parameter); //JCR6.Dir(c.parameter);
-                                if (p == nullptr) {
-                                    if (optional) goto einde; //break;
-                                    throw runtime_error(TrSPrintF("Patch error %s", Last()->ErrorMessage.c_str())); //new Exception($"Patch error {JCR6.JERROR}");
-                                }
-                                ret->Patch(p, fpath);
-                            } else {
-                                var rw = ChReplace(Trim(c->parameter.substr(0, to)), '\\', '/'); //c.parameter.Substring(0, to).Trim().Replace("\\", "/");
-                                var tg = ChReplace(Trim(c->parameter.substr(to + 1)), '\\', '/'); //c.parameter.Substring(to + 1).Trim().Replace("\\", "/");
-                                var p = JCR6_Dir(rw);
-                                if (p == nullptr) {
-                                    if (optional) goto einde;
-                                    //throw new Exception($"Patch error {JCR6.JERROR}");
-                                    throw runtime_error(TrSPrintF("Patch error %s", Last()->ErrorMessage.c_str())); //new Exception($"Patch error {JCR6.JERROR}");
-                                }
-                                ret->Patch(p, fpath + tg);
-                            }
-                            //break;
-                        }
-                        ccase2("AUTHOR", "AUT") {
-                            author = c->parameter;
-                            //break;
-                        }
-                        ccase2("NOTES", "NTS") {
-                            notes = c->parameter;
-                            //break;
-                        }
-                        ccase("RAW") {
-                            var p = FindFirst(c->parameter, '>');
-                            var rw = ChReplace(c->parameter, '\\', '/');
-                            var tg = rw;
-                            if (p >= 0) {
-                                //rw = c.parameter.Substring(0, p).Trim().Replace("\\", "/");
-                                //tg = c.parameter.Substring(p + 1).Trim().Replace("\\", "/");
-                                rw = ChReplace(Trim(c->parameter.substr(0, p)), '\\', '/'); //c.parameter.Substring(0, to).Trim().Replace("\\", "/");
-                                tg = ChReplace(Trim(c->parameter.substr(p + 1)), '\\', '/'); //c.parameter.Substring(to + 1).Trim().Replace("\\", "/");
+		JT_Dir JQL_Dir(string file, string fpath) { //public override TJCRDIR Dir(string file) {
+			InFile BT = nullptr; //QuickStream BT = null;
+			map<string, JT_Dir> MapFrom{};
+			JT_Dir From{ nullptr };
+			try {
+				BT = ReadFile(file);
+				var ret = make_shared<_JT_Dir>(); //= new TJCRDIR();
+				string s{ "" };
+				do {
+					if (BT->EndOfFile()) throw runtime_error("JQL heading not found"); //throw new Exception("JQL heading not found!");
+					s = RL(BT);
+				} while (s == "" || Prefixed(s, "#"));
+				if (s != "JQL") throw runtime_error("JQL not properly headed!");
+				var optional = true;
+				var author = string("");
+				var notes = string("");
+				while (!BT->EndOfFile()) {
+					s = RL(BT);
+					var c = _new(_QP, s);
+					if (s != "" && (!Prefixed(s, "#"))) {
+						//switch (c->commando) {
+						if (false) {}
+						ccase2("REQUIRED", "REQ") {
+							optional = false;
+							//break;
+						}
+						ccase2("OPTIONAL", "OPT") {
+							optional = true;
+							//break;
+						}
+						ccase("PATCH") {
+							var to = FindFirst(c->parameter, '>'); //c.parameter.IndexOf('>');
+							if (to < 0) {
+								var p = JCR6_Dir(c->parameter); //JCR6.Dir(c.parameter);
+								if (p == nullptr) {
+									if (optional) goto einde; //break;
+									throw runtime_error(TrSPrintF("Patch error %s", Last()->ErrorMessage.c_str())); //new Exception($"Patch error {JCR6.JERROR}");
+								}
+								ret->Patch(p, fpath);
+							} else {
+								var rw = ChReplace(Trim(c->parameter.substr(0, to)), '\\', '/'); //c.parameter.Substring(0, to).Trim().Replace("\\", "/");
+								var tg = ChReplace(Trim(c->parameter.substr(to + 1)), '\\', '/'); //c.parameter.Substring(to + 1).Trim().Replace("\\", "/");
+								var p = JCR6_Dir(rw);
+								if (p == nullptr) {
+									if (optional) goto einde;
+									//throw new Exception($"Patch error {JCR6.JERROR}");
+									throw runtime_error(TrSPrintF("Patch error %s", Last()->ErrorMessage.c_str())); //new Exception($"Patch error {JCR6.JERROR}");
+								}
+								ret->Patch(p, fpath + tg);
+							}
+							//break;
+						}
+						ccase2("AUTHOR", "AUT") {
+							author = c->parameter;
+							//break;
+						}
+						ccase2("NOTES", "NTS") {
+							notes = c->parameter;
+							//break;
+						}
+						ccase("RAW") {
+							var p = FindFirst(c->parameter, '>');
+							var rw = ChReplace(c->parameter, '\\', '/');
+							var tg = rw;
+							if (p >= 0) {
+								//rw = c.parameter.Substring(0, p).Trim().Replace("\\", "/");
+								//tg = c.parameter.Substring(p + 1).Trim().Replace("\\", "/");
+								rw = ChReplace(Trim(c->parameter.substr(0, p)), '\\', '/'); //c.parameter.Substring(0, to).Trim().Replace("\\", "/");
+								tg = ChReplace(Trim(c->parameter.substr(p + 1)), '\\', '/'); //c.parameter.Substring(to + 1).Trim().Replace("\\", "/");
 
-                            }
-                            if (tg.size() > 1 && tg[1] == ':') tg = tg.substr(2);
-                            while (tg[1] == '/') tg = tg.substr(1);
-                            if (rw == "") throw runtime_error("RAW no original");
-                            if (tg == "") throw runtime_error("RAW no target");
-                            if (!FileExists(rw)) {
-                                if (optional) goto einde; //break; // break would end the while loop. C++ does not support switch on strings which is quite a bummer
-                                throw runtime_error(TrSPrintF("Required raw file \"%s\" doesn't exist!", rw.c_str()));
-                            }
-                            var e = make_shared<_JT_Entry>(); //= new TJCREntry();
-                            e->_ConfigString["__Entry"] = fpath + tg; //e.Entry = tg;
-                            e->MainFile = rw;
-                            e->_ConfigString["__Storage"] = "Store";
-                            e->_ConfigInt["__Offset"] = 0;
-                            e->_ConfigInt["__Size"] = FileSize(rw); //(int)new FileInfo(rw).Length;
-                            e->_ConfigInt["__CSize"] = e->RealSize();
-                            e->_ConfigString["__Notes"] = notes;
-                            e->_ConfigString["__Author"] = author;
-                            ret->_Entries[Upper(e->Name())] = e;
-                            //break;
-                        }
-                        ccase("RAWDIR") {
-                            var p = FindFirst(c->parameter, '>');
-                            //var rw = ChReplace(c->parameter, '\\', '/');
-                            //var tg = rw;
-                            string ds{ "" }, dt{ "" };
-                            if (p < 0) 
-                                ds = c->parameter;
-                            else {
-                                ds = ChReplace(Trim(c->parameter.substr(0, p)), '\\', '/'); //c.parameter.Substring(0, to).Trim().Replace("\\", "/");
-                                dt = ChReplace(Trim(c->parameter.substr(p + 1)), '\\', '/')+"/";
-                            }
-                            if (DirectoryExists(ds)) {
-                                auto p = GetTree(ds);
-                                for (auto f : *p) {
-                                    string rw{ ds + "/" + f };
-                                    if (_JT_Dir::Recognize(rw)!="NONE") {
-                                        var ijcr = JCR6_Dir(rw);
-                                        for(var eij : ijcr->_Entries) {
-                                            auto  nname{ dt + "/" + f + "/" + eij.second->Name() };
-                                            while (nname[0] == '/') nname = nname.substr(1);
-                                            eij.second->Name(nname);
-                                            ret->_Entries[Upper(eij.second->Name())] = eij.second;
-                                        }
-                                    } else {
-                                        var e = make_shared<_JT_Entry>(); //= new TJCREntry();
-                                        var ename{ StReplace(fpath + dt,"//","/") };
-                                        e->_ConfigString["__Entry"] = ename;
-                                        if (e->Name().size()) e->_ConfigString["__Entry"] += "/";
-                                        e->_ConfigString["__Entry"] += f; //e.Entry = tg;
-                                        //cout << "Raw: " << rw << " to " << e->Name() << "\n"; // debug only
-                                        e->MainFile = rw;
-                                        e->_ConfigString["__Storage"] = "Store";
-                                        e->_ConfigInt["__Offset"] = 0;
-                                        e->_ConfigInt["__Size"] = FileSize(rw); //(int)new FileInfo(rw).Length;
-                                        e->_ConfigInt["__CSize"] = e->RealSize();
-                                        e->_ConfigInt["__Offset"] = 0;
-                                        e->_ConfigString["__Notes"] = notes;
-                                        e->_ConfigString["__Author"] = author;
-                                        ret->_Entries[Upper(e->Name())] = e;
-                                    }
-                                }
-                            } else if (!optional) throw runtime_error("Required raw Directory '"+ds+"' not found");
-                        }
-                        ccase2("TEXT", "TXT") {
-                            var tg = ChReplace(Trim(c->parameter), '\\', '/'); //c.parameter.Trim().Replace("\\", "/");
-                            if (tg.size() > 1 && tg[1] == ':') tg = tg.substr(2);
-                            while (tg[1] == '/') tg = tg.substr(1);
-                            if (tg == "") throw runtime_error("TEXT no target");
-                            var e = make_shared<_JT_Entry>(); //= new TJCREntry();
-                            char buf[6]; buf[5] = 0; //= new byte[5];
-                            e->_ConfigString["__Entry"] = fpath + tg;
-                            e->MainFile = file;
-                            e->_ConfigString["__Storage"] = "Store";
-                            e->_ConfigInt["__Offset"] = (int)BT->Position();
-                            e->_ConfigString["__Notes"] = notes;
-                            e->_ConfigString["__Author"] = author;
-                            do {
-                                if (BT->EndOfFile()) throw runtime_error("Unexpected end of file (TXT Block not ended)");
-                                for (int i = 0; i < 4; i++) buf[i] = buf[i + 1];
-                                buf[4] = BT->ReadChar();
-                                //Console.WriteLine(Encoding.UTF8.GetString(buf, 0, buf.Length));
-                            } while (strcmp(buf, "@END@") != 0); //while (Encoding.UTF8.GetString(buf, 0, buf.Length) != "@END@");
-                            RL(BT);
-                            e->_ConfigInt["__Size"] = (int)(BT->Position() - 7) - e->Offset();
-                            e->_ConfigInt["__CSize"] = e->RealSize();
-                            ret->_Entries[Upper(e->Name())] = e;
-                            //break;
-                        }
-                        ccase2("COMMENT", "CMT") {
-                            if (c->parameter == "") throw runtime_error("Comment without a name");
-                            var cmt{ string() };//= new StringBuilder("");
-                            var l{ string() };
-                            do {
-                                if (BT->EndOfFile()) throw runtime_error("Unexpected end of file (COMMENT block not ended)");
-                                l = RL(BT, false);
-                                if (Trim(l) != "@END@")
-                                    cmt += l + "\n"; // .Append($"{l}\n");
-                            } while (Trim(l) != "@END@");
-                            ret->Comments[c->parameter] = cmt; //.ToString();
-                            //break;
-                        }
-                        ccase("IMPORT")
-                            ret->Patch(c->parameter, fpath);
-                        //break;
-                        ccase("FROM") {
-                            auto P = Upper(c->parameter);
-                            if (MapFrom.count(P)) {
-                                From = MapFrom[P];
-                            } else {
-                                auto F{ JCR6_Dir(P) };
-                                if (Last()->Error) throw runtime_error(Last()->ErrorMessage.c_str());
-                                From = F;
-                                MapFrom[P] = F;
-                            }
-                        }
-                        ccase("STEAL") {
-                            if (!From) throw runtime_error("FROM must be defined before you can STEAL");
-                            var p = FindFirst(c->parameter, '>');
-                            var rw = ChReplace(c->parameter, '\\', '/');
-                            var tg = rw;
-                            if (p >= 0) {
-                                rw = ChReplace(Trim(c->parameter.substr(0, p)), '\\', '/'); //c.parameter.Substring(0, to).Trim().Replace("\\", "/");
-                                tg = ChReplace(Trim(c->parameter.substr(p + 1)), '\\', '/'); //c.parameter.Substring(to + 1).Trim().Replace("\\", "/");
+							}
+							if (tg.size() > 1 && tg[1] == ':') tg = tg.substr(2);
+							while (tg[1] == '/') tg = tg.substr(1);
+							if (rw == "") throw runtime_error("RAW no original");
+							if (tg == "") throw runtime_error("RAW no target");
+							if (!FileExists(rw)) {
+								if (optional) goto einde; //break; // break would end the while loop. C++ does not support switch on strings which is quite a bummer
+								throw runtime_error(TrSPrintF("Required raw file \"%s\" doesn't exist!", rw.c_str()));
+							}
+							var e = make_shared<_JT_Entry>(); //= new TJCREntry();
+							e->_ConfigString["__Entry"] = fpath + tg; //e.Entry = tg;
+							e->MainFile = rw;
+							e->_ConfigString["__Storage"] = "Store";
+							e->_ConfigInt["__Offset"] = 0;
+							e->_ConfigInt["__Size"] = FileSize(rw); //(int)new FileInfo(rw).Length;
+							e->_ConfigInt["__CSize"] = e->RealSize();
+							e->_ConfigString["__Notes"] = notes;
+							e->_ConfigString["__Author"] = author;
+							ret->_Entries[Upper(e->Name())] = e;
+							//break;
+						}
+						ccase("RAWDIR") {
+							var p = FindFirst(c->parameter, '>');
+							//var rw = ChReplace(c->parameter, '\\', '/');
+							//var tg = rw;
+							string ds{ "" }, dt{ "" };
+							if (p < 0) 
+								ds = c->parameter;
+							else {
+								ds = ChReplace(Trim(c->parameter.substr(0, p)), '\\', '/'); //c.parameter.Substring(0, to).Trim().Replace("\\", "/");
+								dt = ChReplace(Trim(c->parameter.substr(p + 1)), '\\', '/')+"/";
+							}
+							if (DirectoryExists(ds)) {
+								auto p = GetTree(ds);
+								for (auto f : *p) {
+									string rw{ ds + "/" + f };
+									rw = StReplace(rw, "//", "/");
+									if (_JT_Dir::Recognize(rw)!="NONE") {
+										var ijcr = JCR6_Dir(rw);
+										for(var eij : ijcr->_Entries) {
+											auto  nname{ dt + "/" + f + "/" + eij.second->Name() };
+											while (nname[0] == '/') nname = nname.substr(1);
+											eij.second->Name(nname);
+											ret->_Entries[Upper(eij.second->Name())] = eij.second;
+										}
+									} else {
+										var e = make_shared<_JT_Entry>(); //= new TJCREntry();
+										var ename{ StReplace(fpath + dt,"//","/") };
+										e->_ConfigString["__Entry"] = ename;
+										if (e->Name().size()) e->_ConfigString["__Entry"] += "/";										
+										e->Name(e->_ConfigString["__Entry"] + f); //e.Entry = tg;
+										//cout << "Raw: " << rw << " to " << e->Name() << "\n"; // debug only
+										e->MainFile = rw;
+										e->_ConfigString["__Storage"] = "Store";
+										e->_ConfigInt["__Offset"] = 0;
+										e->_ConfigInt["__Size"] = FileSize(rw); //(int)new FileInfo(rw).Length;
+										e->_ConfigInt["__CSize"] = e->RealSize();
+										e->_ConfigInt["__Offset"] = 0;
+										e->_ConfigString["__Notes"] = notes;
+										e->_ConfigString["__Author"] = author;
+										ret->_Entries[Upper(e->Name())] = e;
+									}
+								}
+							} else if (!optional) throw runtime_error("Required raw Directory '"+ds+"' not found");
+						}
+						ccase2("TEXT", "TXT") {
+							var tg = ChReplace(Trim(c->parameter), '\\', '/'); //c.parameter.Trim().Replace("\\", "/");
+							if (tg.size() > 1 && tg[1] == ':') tg = tg.substr(2);
+							while (tg[1] == '/') tg = tg.substr(1);
+							if (tg == "") throw runtime_error("TEXT no target");
+							var e = make_shared<_JT_Entry>(); //= new TJCREntry();
+							char buf[6]; buf[5] = 0; //= new byte[5];
+							e->_ConfigString["__Entry"] = fpath + tg;
+							e->MainFile = file;
+							e->_ConfigString["__Storage"] = "Store";
+							e->_ConfigInt["__Offset"] = (int)BT->Position();
+							e->_ConfigString["__Notes"] = notes;
+							e->_ConfigString["__Author"] = author;
+							do {
+								if (BT->EndOfFile()) throw runtime_error("Unexpected end of file (TXT Block not ended)");
+								for (int i = 0; i < 4; i++) buf[i] = buf[i + 1];
+								buf[4] = BT->ReadChar();
+								//Console.WriteLine(Encoding.UTF8.GetString(buf, 0, buf.Length));
+							} while (strcmp(buf, "@END@") != 0); //while (Encoding.UTF8.GetString(buf, 0, buf.Length) != "@END@");
+							RL(BT);
+							e->_ConfigInt["__Size"] = (int)(BT->Position() - 7) - e->Offset();
+							e->_ConfigInt["__CSize"] = e->RealSize();
+							ret->_Entries[Upper(e->Name())] = e;
+							//break;
+						}
+						ccase2("COMMENT", "CMT") {
+							if (c->parameter == "") throw runtime_error("Comment without a name");
+							var cmt{ string() };//= new StringBuilder("");
+							var l{ string() };
+							do {
+								if (BT->EndOfFile()) throw runtime_error("Unexpected end of file (COMMENT block not ended)");
+								l = RL(BT, false);
+								if (Trim(l) != "@END@")
+									cmt += l + "\n"; // .Append($"{l}\n");
+							} while (Trim(l) != "@END@");
+							ret->Comments[c->parameter] = cmt; //.ToString();
+							//break;
+						}
+						ccase("IMPORT")
+							ret->Patch(c->parameter, fpath);
+						//break;
+						ccase("FROM") {
+							auto P = Upper(c->parameter);
+							if (MapFrom.count(P)) {
+								From = MapFrom[P];
+							} else {
+								auto F{ JCR6_Dir(P) };
+								if (Last()->Error) throw runtime_error(Last()->ErrorMessage.c_str());
+								From = F;
+								MapFrom[P] = F;
+							}
+						}
+						ccase("STEAL") {
+							if (!From) throw runtime_error("FROM must be defined before you can STEAL");
+							var p = FindFirst(c->parameter, '>');
+							var rw = ChReplace(c->parameter, '\\', '/');
+							var tg = rw;
+							if (p >= 0) {
+								rw = ChReplace(Trim(c->parameter.substr(0, p)), '\\', '/'); //c.parameter.Substring(0, to).Trim().Replace("\\", "/");
+								tg = ChReplace(Trim(c->parameter.substr(p + 1)), '\\', '/'); //c.parameter.Substring(to + 1).Trim().Replace("\\", "/");
 
-                            }
-                            if (tg.size() > 1 && tg[1] == ':') tg = tg.substr(2);
-                            while (tg[1] == '/') tg = tg.substr(1);
-                            if (rw == "") throw runtime_error("STEAL no entry");
-                            if (tg == "") throw runtime_error("STEALno target");
-                            auto ei{ From->Entry(rw) };
-                            auto eor{ new _JT_Entry() }; *eor = *ei;
-                            auto eo{ shared_ptr<_JT_Entry>(eor) };
-                            eo->_ConfigString["__Entry"] = fpath + tg;
-                            ret->_Entries[Upper(eo->Name())] = eo;
-                        } 
-                        ccase("END") {
-                            return ret;
-                            //default: throw new Exception($"Unknown instruction! {c.commando}");
-                        } else {
-                            throw runtime_error(TrSPrintF("Unknown instrunction! %s", c->commando.c_str()));                            
-                        }
-                    einde:
-                        ;
-                    }
-                }
-                return ret;
-            } catch (runtime_error r) { //catch (Exception e) {
-                //JCR6.JERROR = $"JQL error: {e.Message}";
-                JCR6_Panic(TrSPrintF("JQL error: %s", r.what()));
-                //#ifdef DEBUG
-                                    //Console.WriteLine(e.StackTrace);
-                //#endif
-                return nullptr;
-                //                } finally {
-                //                    if (BT != null) BT.Close();
-            }
-        }
+							}
+							if (tg.size() > 1 && tg[1] == ':') tg = tg.substr(2);
+							while (tg[1] == '/') tg = tg.substr(1);
+							if (rw == "") throw runtime_error("STEAL no entry");
+							if (tg == "") throw runtime_error("STEALno target");
+							auto ei{ From->Entry(rw) };
+							auto eor{ new _JT_Entry() }; *eor = *ei;
+							auto eo{ shared_ptr<_JT_Entry>(eor) };
+							eo->_ConfigString["__Entry"] = fpath + tg;
+							ret->_Entries[Upper(eo->Name())] = eo;
+						} 
+						ccase("END") {
+							return ret;
+							//default: throw new Exception($"Unknown instruction! {c.commando}");
+						} else {
+							throw runtime_error(TrSPrintF("Unknown instrunction! %s", c->commando.c_str()));                            
+						}
+					einde:
+						;
+					}
+				}
+				return ret;
+			} catch (runtime_error r) { //catch (Exception e) {
+				//JCR6.JERROR = $"JQL error: {e.Message}";
+				JCR6_Panic(TrSPrintF("JQL error: %s", r.what()));
+				//#ifdef DEBUG
+									//Console.WriteLine(e.StackTrace);
+				//#endif
+				return nullptr;
+				//                } finally {
+				//                    if (BT != null) BT.Close();
+			}
+		}
 
 
 #pragma endregion
 
 #pragma region JSQL
-        bool JSQL_Recognize(std::string file) {
-            if (!FileExists(file)) return false;
-            return (Left(Upper(FLoadString(file)), 5) == "JSQL:");
-        }
+		bool JSQL_Recognize(std::string file) {
+			if (!FileExists(file)) return false;
+			return (Left(Upper(FLoadString(file)), 5) == "JSQL:");
+		}
 
-        JT_Dir JSQL_Dir(std::string file, std::string fpath) {
-            auto content{ FLoadString(file) };
-            auto lfile{ Trim(Right(content,content.size() - 5)) };
-            if (DirectoryExists(lfile)) {
-                fpath = ChReplace(fpath, '\\', '/');
-                if (!Suffixed(fpath, "/")) fpath += "/";
-                var ret = new _JT_Dir();
-                var d = GetTree(lfile);
-                for(var f : *d) {
-                    var e = make_shared<_JT_Entry>();
-                    e->MainFile = lfile + "/" + f;
-                    e->Name(StripDir(fpath+f));
-                    e->Storage("Store");
-                    e->RealSize( (int)FileSize(e->MainFile));
-                    e->CompressedSize(e->RealSize());
-                    e->Notes("Linked to by: " + file);
-                    ret->_Entries[Upper(e->Name())] = e;
-                }
-                return std::shared_ptr<_JT_Dir>(ret);
-            }
-            if (_JT_Dir::Recognize(lfile) == "NONE") {
-                fpath = ChReplace(fpath, '\\', '/');
-                if (!Suffixed(fpath, "/")) fpath += "/";
-                auto ret{ make_shared<_JT_Dir>() };
-                auto e{ make_shared<_JT_Entry>() };
-                e->Name(fpath + StripDir(lfile));
-                e->MainFile = lfile;
-                e->Storage("Store");
-                e->RealSize(FileSize(lfile));
-                e->CompressedSize(e->RealSize());
-                e->Notes("Linked to by: " + file);
-                ret->_Entries[Upper(e->Name())] = e;
-                return ret;
-            }
-            return JCR6_Dir(file, fpath);
-        }
-        
+		JT_Dir JSQL_Dir(std::string file, std::string fpath) {
+			auto content{ FLoadString(file) };
+			auto lfile{ Trim(Right(content,content.size() - 5)) };
+			if (DirectoryExists(lfile)) {
+				fpath = ChReplace(fpath, '\\', '/');
+				if (!Suffixed(fpath, "/")) fpath += "/";
+				var ret = new _JT_Dir();
+				var d = GetTree(lfile);
+				for(var f : *d) {
+					var e = make_shared<_JT_Entry>();
+					e->MainFile = lfile + "/" + f;
+					e->Name(StripDir(fpath+f));
+					e->Storage("Store");
+					e->RealSize( (int)FileSize(e->MainFile));
+					e->CompressedSize(e->RealSize());
+					e->Notes("Linked to by: " + file);
+					ret->_Entries[Upper(e->Name())] = e;
+				}
+				return std::shared_ptr<_JT_Dir>(ret);
+			}
+			if (_JT_Dir::Recognize(lfile) == "NONE") {
+				fpath = ChReplace(fpath, '\\', '/');
+				if (!Suffixed(fpath, "/")) fpath += "/";
+				auto ret{ make_shared<_JT_Dir>() };
+				auto e{ make_shared<_JT_Entry>() };
+				e->Name(fpath + StripDir(lfile));
+				e->MainFile = lfile;
+				e->Storage("Store");
+				e->RealSize(FileSize(lfile));
+				e->CompressedSize(e->RealSize());
+				e->Notes("Linked to by: " + file);
+				ret->_Entries[Upper(e->Name())] = e;
+				return ret;
+			}
+			return JCR6_Dir(file, fpath);
+		}
+		
 #pragma endregion
 
 #pragma region Ini
-        //public JCR_QuickLink() {
-        //    JCR6.FileDrivers["JCR6 Quick Link"] = this;
-        //}
-        void InitJQL() {
-            Chat("Init JQL");
-            JD_DirDriver JQL;
-            JQL.Name = "JQL";
-            JQL.Recognize = JQL_Recognize;
-            JQL.Dir = JQL_Dir;
-            RegisterDirDriver(JQL);
+		//public JCR_QuickLink() {
+		//    JCR6.FileDrivers["JCR6 Quick Link"] = this;
+		//}
+		void InitJQL() {
+			Chat("Init JQL");
+			JD_DirDriver JQL;
+			JQL.Name = "JQL";
+			JQL.Recognize = JQL_Recognize;
+			JQL.Dir = JQL_Dir;
+			RegisterDirDriver(JQL);
 
-            Chat("Init JSQL");
-            JD_DirDriver JSQL;
-            JSQL.Name = "JSQL";
-            JSQL.Recognize = JSQL_Recognize;
-            JSQL.Dir = JSQL_Dir;
-            RegisterDirDriver(JSQL);
+			Chat("Init JSQL");
+			JD_DirDriver JSQL;
+			JSQL.Name = "JSQL";
+			JSQL.Recognize = JSQL_Recognize;
+			JSQL.Dir = JSQL_Dir;
+			RegisterDirDriver(JSQL);
 
-        }
-    }
+		}
+	}
 #pragma endregion
 }
