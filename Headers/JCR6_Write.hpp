@@ -1,7 +1,7 @@
 // Lic:
 // JCR6/Headers/JCR6_Write.hpp
 // Slyvina - JCR6 - Writer (header)
-// version: 24.02.24
+// version: 24.03.22
 // Copyright (C) 2022, 2023, 2024 Jeroen P. Broks
 // This software is provided 'as-is', without any express or implied
 // warranty.  In no event will the authors be held liable for any damages
