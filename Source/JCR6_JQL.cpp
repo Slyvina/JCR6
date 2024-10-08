@@ -1,7 +1,7 @@
 // Lic:
 // JCR6/Source/JCR6_JQL.cpp
 // JCR Quick Link
-// version: 24.07.18
+// version: 24.10.05
 // Copyright (C) 2023, 2024 Jeroen P. Broks
 // This software is provided 'as-is', without any express or implied
 // warranty.  In no event will the authors be held liable for any damages
