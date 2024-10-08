@@ -9,4 +9,4 @@ Thumbs.db
 *.exe
 
 
-3rdParty/zlib/src/
+# 3rdParty/zlib/src/
