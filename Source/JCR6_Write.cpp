@@ -1,7 +1,7 @@
 // Lic:
 // JCR6/Source/JCR6_Write.cpp
 // Slyvina - JCR6 - Writer
-// version: 24.03.22
+// version: 24.10.08
 // Copyright (C) 2022, 2023, 2024 Jeroen P. Broks
 // This software is provided 'as-is', without any express or implied
 // warranty.  In no event will the authors be held liable for any damages
@@ -444,11 +444,11 @@ namespace Slyvina {
 #ifdef SlyvWindows
 			NEntry->_ConfigString["__OS"] = "Windows";
 			NEntry->_ConfigInt["__CHMOD"] = 0777;
-#elif SlyvMac
+#elif defined(SlyvMac)
 			NEntry->_ConfigString["__OS"] = "Mac";
-#elif SlyvIOS
+#elif defined(SlyvIOS)
 			NEntry->_ConfigString["__OS"] = "iOS";
-#elif SlyvLinux
+#elif defined(SlyvLinux)
 			NEntry->_ConfigString["__OS"] = "Linux";
 #else
 			NEntry->_ConfigString["__OS"] = "Unidentified";
