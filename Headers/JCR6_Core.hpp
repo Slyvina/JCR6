@@ -1,3 +1,26 @@
+// License:
+// 	JCR6/Headers/JCR6_Core.hpp
+// 	Slyvina - JCR6 - Core (header)
+// 	version: 24.10.25
+// 
+// 	Copyright (C) 2022, 2023, 2024 Jeroen P. Broks
+// 
+// 	This software is provided 'as-is', without any express or implied
+// 	warranty.  In no event will the authors be held liable for any damages
+// 	arising from the use of this software.
+// 
+// 	Permission is granted to anyone to use this software for any purpose,
+// 	including commercial applications, and to alter it and redistribute it
+// 	freely, subject to the following restrictions:
+// 
+// 	1. The origin of this software must not be misrepresented; you must not
+// 	   claim that you wrote the original software. If you use this software
+// 	   in a product, an acknowledgment in the product documentation would be
+// 	   appreciated but is not required.
+// 	2. Altered source versions must be plainly marked as such, and must not be
+// 	   misrepresented as being the original software.
+// 	3. This notice may not be removed or altered from any source distribution.
+// End License
 // Lic:
 // JCR6/Headers/JCR6_Core.hpp
 // Slyvina - JCR6 - Core (header)
@@ -36,7 +59,7 @@
 * And of course their respective headers must be available!
 */
 
-using namespace Slyvina::Units;
+//using namespace Slyvina::Units;
 
 namespace Slyvina {
 	namespace JCR6 {
@@ -175,7 +198,7 @@ namespace Slyvina {
 			/// </summary>
 			/// <param name="_Entry">Name of the entry</param>
 			/// <returns></returns>
-			inline std::string GetString(std::string _Entry) { auto BUF{ B(_Entry) }; if (BUF){ return BUF->ReadString(BUF->Size()); } else return ""; }
+			inline std::string GetString(std::string _Entry) { auto BUF{ B(_Entry) }; return BUF ? BUF->ReadString(BUF->Size()) : ""; }
 
 			/// <summary>
 			/// Reads an entire JCR6 entry as a string and splits it into lines (Note: <CR> will be removed from the string and the system will then take <LF> as the end of each line. This way the Windows and Unix standards should work, but other ways (like <CR> only systems) are not supported this way).
@@ -212,7 +235,7 @@ namespace Slyvina {
 				auto v{ _ConfigString["__Entry"] };
 				do { 
 					v = _ConfigString["__Entry"];
-					_ConfigString["__Entry"] = StReplace(v, "//", "/");
+					_ConfigString["__Entry"] = Units::StReplace(v, "//", "/");
 				} while (v != _ConfigString["__Entry"]);
 			}
 			inline void RealSize(int32 _s){ _ConfigInt["__Size"]= (int)_s; }
