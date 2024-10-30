@@ -1,22 +1,26 @@
-// Lic:
-// JCR6/Source/JCR6_Core.cpp
-// Slyvina - JCR6 - Core
-// version: 24.10.05
-// Copyright (C) 2022, 2023, 2024 Jeroen P. Broks
-// This software is provided 'as-is', without any express or implied
-// warranty.  In no event will the authors be held liable for any damages
-// arising from the use of this software.
-// Permission is granted to anyone to use this software for any purpose,
-// including commercial applications, and to alter it and redistribute it
-// freely, subject to the following restrictions:
-// 1. The origin of this software must not be misrepresented; you must not
-// claim that you wrote the original software. If you use this software
-// in a product, an acknowledgment in the product documentation would be
-// appreciated but is not required.
-// 2. Altered source versions must be plainly marked as such, and must not be
-// misrepresented as being the original software.
-// 3. This notice may not be removed or altered from any source distribution.
-// EndLic
+// License:
+// 	JCR6/Source/JCR6_Core.cpp
+// 	Slyvina - JCR6 - Core
+// 	version: 24.10.30
+// 
+// 	Copyright (C) 2022, 2023, 2024 Jeroen P. Broks
+// 
+// 	This software is provided 'as-is', without any express or implied
+// 	warranty.  In no event will the authors be held liable for any damages
+// 	arising from the use of this software.
+// 
+// 	Permission is granted to anyone to use this software for any purpose,
+// 	including commercial applications, and to alter it and redistribute it
+// 	freely, subject to the following restrictions:
+// 
+// 	1. The origin of this software must not be misrepresented; you must not
+// 	   claim that you wrote the original software. If you use this software
+// 	   in a product, an acknowledgment in the product documentation would be
+// 	   appreciated but is not required.
+// 	2. Altered source versions must be plainly marked as such, and must not be
+// 	   misrepresented as being the original software.
+// 	3. This notice may not be removed or altered from any source distribution.
+// End License
 
 #include <cstring>
 
@@ -47,6 +51,7 @@ namespace Slyvina {
 		inline void __InitJCR6();
 #pragma endregion
 
+
 #pragma region ErrorCatching
 		JE_Error LastError;
 		void JCR6_Panic(std::string Msg, std::string _Main, std::string _Entry) {
@@ -60,7 +65,7 @@ namespace Slyvina {
 			return &LastError;
 		}
 		inline void _Error(std::string Err, std::string _Main = "N/A", std::string _Entry = "N/A") { JCR6_Panic(Err, _Main, _Entry); }
-		inline void _ClearError() {
+		static void _ClearError() {
 			LastError.Error = false;
 			LastError.ErrorMessage = "";
 			LastError.MainFile = "";
@@ -70,9 +75,10 @@ namespace Slyvina {
 #define _NullError(err,main,entry) {_Error(err,main,entry); return nullptr; }
 #pragma endregion
 
+
 #pragma region Driver_Registration
-		static map<string, JD_DirDriver> DirDrivers;
-		static map<string, JC_CompressDriver> CompDrivers;
+		static map<string, JD_DirDriver> DirDrivers{};
+		static map<string, JC_CompressDriver> CompDrivers{};
 		
 
 		void RegisterDirDriver(JD_DirDriver Driver) {
@@ -113,6 +119,7 @@ namespace Slyvina {
 			}
 			return _Entries[Upper(Ent)];
 		}
+
 		std::shared_ptr<std::vector<JT_Entry>> _JT_Dir::Entries() {
 			auto ret{ make_shared<vector<JT_Entry>>()};
 			if (!this) {
@@ -123,21 +130,19 @@ namespace Slyvina {
 			return ret;
 		}
 
-		
-			
-		
-
 		std::string _JT_Dir::Recognize(std::string File) {
 			__InitJCR6();
 			for (auto d : DirDrivers)
 				if (d.second.Recognize(File)) {
 					Chat("Recognized '" << File << "' as " << d.first);
 					return d.first;
+#ifdef JCR6_Debug
 				} else {
 					Chat("NOT recognized '" << File << "' as " << d.first);
+#endif
 				}
 			return "NONE";
-		}
+		} 
 
 		JT_Dir _JT_Dir::GetDir(std::string File, std::string fpath) {
 			__InitJCR6();			
@@ -302,7 +307,7 @@ namespace Slyvina {
 				} else if (ExtractDir(EI.first) == PDir) {
 					ret->push_back(EI.second->Name());
 				}
-			}
+			}			
 			return ret;
 		}
 
@@ -319,17 +324,23 @@ namespace Slyvina {
 		}
 
 		int32 _JT_Entry::Offset() {
+			/*
 			if (Block())
 				return _ConfigInt["__Offset"];
 			else
 				return _ConfigInt["__Offset"] + Correction;			
+			//*/
+			return Block() ? _ConfigInt["__Offset"] : _ConfigInt["__Offset"] + Correction;
 		}
 
 		void _JT_Entry::Offset(int32 _offs) {
+			/*
 			if (Block())
 				_ConfigInt["__Offset"] = _offs;
 			else
-				_ConfigInt["__Offset"] = _offs - Correction;
+				_ConfigInt["__Offset"] = _offs - Correction;				
+			//*/
+			_ConfigInt["__Offset"] = Block() ? _offs : _offs - Correction;
 		}
 
 		JT_Entry _JT_Entry::Copy() {
@@ -371,11 +382,14 @@ namespace Slyvina {
 			Chat("=> CheckHeader: " << checkheader);
 			Chat("=> GotHeader:   " << gotheader);
 			Chat("=> Recognized: " << ret);
-			if (!ret) {
-				bt->Seek(bt->Size() - 4);
-				if (bt->ReadString(4) == "JCR6") {
+			if (!ret) {				
+				auto sz{ bt->Size() }; bt->Seek(sz - 4);
+				auto foot{ bt->ReadString(4) }; Chat("Foot Check" << foot);
+				if (foot == "JCR6") {
+					//ret = true;
 					uint16 Footer = 5;
 					bt->Seek(bt->Size() - Footer); byte bits = bt->ReadByte();
+					Chat("offbits:" << (int)bits);
 					switch (bits) {
 					case 8:
 						Footer++;
@@ -397,7 +411,15 @@ namespace Slyvina {
 						_Error(TrSPrintF("No support for %d bits in getting offset correction value", bits), File);
 						return;
 					}
-					ret = ret && bt->ReadString(strlen(checkheader)) == checkheader;
+					bt->Seek(bt->Size() - RecD.Correction);
+					Chat("Correction: " << RecD.Correction << " (" << TrSPrintF("%x", RecD.Correction) << ") -> " << bt->Size() - RecD.Correction << TrSPrintF("(% x)", bt->Size() - RecD.Correction));
+					//ret = ret && bt->ReadString(strlen(checkheader)) == checkheader;
+					auto corhead{ bt->ReadString(strlen(checkheader)) };
+					Chat("Head at corhead: " << corhead);
+					ret = corhead == checkheader;
+#ifdef JCR6_Debug
+					for (size_t i = 0; i < corhead.size(); i++) { Chat(i << ": " << (int)corhead[i] << "." << (int)checkheader[i]); }
+#endif
 				}
 			}
 			bt->Close();
@@ -420,11 +442,11 @@ namespace Slyvina {
 				if (LastError.Error) return nullptr;
 				_NullError("File not recognized as JCR6, yet it's being loaded by the JCR6 driver", File, "N/A");
 			}
-			auto BT{ ReadFile(File) }; BT->ReadString(strlen(checkheader));
+			auto BT{ ReadFile(File) }; 
 			auto ret{ make_shared<_JT_Dir>() };
 			int correction{ 0 }; if (D.Correction) correction = (int)BT->Size() - D.Correction;
-
-			//cout << "TODO! Make the actual directory reader for JCR6!\n";
+			BT->Seek(correction);
+			BT->ReadString(strlen(checkheader));			
 			// This is just the C# code, which I simply modified in order to work with Slyvina in C++
 			ret->FATOffset = BT->ReadInt();
 			if (ret->FATOffset <= 0) {
@@ -434,9 +456,12 @@ namespace Slyvina {
 			}
 			byte TTag = 0;
 			string Tag = "";
-			do {
-				TTag = BT->ReadByte();
-				if (TTag != 255) { Tag = BT->ReadString(); }
+			TTag = BT->ReadByte();
+			//if (TTag != 255) { Tag = BT->ReadString(); } //else break;
+			//do {
+			while (TTag != 255){
+				Chat("Config" << (int)TTag << ": " << BT->Position());
+				Tag = BT->ReadString();
 				switch (TTag) {
 				case 1:
 					ret->ConfigString[Tag] = BT->ReadString();
@@ -454,14 +479,15 @@ namespace Slyvina {
 					_NullError(TrSPrintF("Invalid config tag (%d) %s", TTag, File.c_str()), File, "N/A");
 					//return null;
 				}
-			} while (TTag != 255);
+				TTag = BT->ReadByte();
+			} //while (TTag != 255);
 
 
 			if (ret->ConfigBool.count("_CaseSensitive") && ret->ConfigBool["_CaseSensitive"]) {
 				BT->Close();
 				_NullError("Case Sensitive dir support was already deprecated and removed from JCR6 before it went to the Go language. It's only obvious that support for this was never implemented in C++ in the first place.", File, "N/A");
 			}
-			BT->Position(ret->FATOffset);
+			BT->Position(ret->FATOffset+correction);
 			bool theend = false;
 			ret->FATSize = BT->ReadInt();
 			ret->FATCSize = BT->ReadInt();
@@ -516,7 +542,7 @@ namespace Slyvina {
 						var ID = bt->ReadInt();
 						var nb = std::make_shared<_JT_Block>(ID, File);  //= new TJCRBlock(ID, ret, file);
 						var ftag = bt->ReadByte();
-						nb->Correction = D.Correction;
+						nb->Correction = correction; //= D.Correction;
 						ret->Blocks[TrSPrintF("%d:%s", ID, File.c_str())] = nb;//ret.Blocks[$"{ID}:{file}"] = nb;
 						//cout << "Block: " << TrSPrintF("%d:%s", ID, File.c_str()) << endl;
 						//for (auto& DBG : ret->Blocks) cout << "Block dbg: " << DBG.first << "!\n";
@@ -524,6 +550,8 @@ namespace Slyvina {
 						while (ftag != 255) {
 							//chats("FILE TAG %d", ftag)
 							switch (ftag) {
+							case 255:
+								break;
 							case 1: {
 								var k = bt->ReadString();
 								var v = bt->ReadString();
@@ -539,8 +567,6 @@ namespace Slyvina {
 								var vi = bt->ReadInt();
 								nb->dataInt[ki] = vi;
 								break; }
-							case 255:
-								break;
 							default:
 								// p,_:= btf.Seek(0, 1)
 								//JCR6.JERROR = $"Illegal tag in BLOCK({ID}) part: {ftag} on fatpos {bt.Position}";
@@ -559,7 +585,7 @@ namespace Slyvina {
 						Chat("Reading data for FILE");
 						auto nb = std::make_shared<_JT_Entry>();
 						nb->MainFile = File;
-						nb->Correction = D.Correction;
+						nb->Correction = correction;//= D.Correction;
 						/* Not needed in C#
 						 * nb.Datastring = map[string]string{}
 						 * nb.Dataint = map[string]int{}
@@ -569,6 +595,8 @@ namespace Slyvina {
 						while (ftag != 255) {
 							//chats("FILE TAG %d", ftag)
 							switch (ftag) {
+							case 255:
+								break;
 							case 1: {
 								var k = bt->ReadString();
 								var v = bt->ReadString();
@@ -584,8 +612,6 @@ namespace Slyvina {
 								var vi = bt->ReadInt();
 								nb->_ConfigInt[ki] = vi;
 								break; }
-							case 255:
-								break;
 							default:
 								// p,_:= btf.Seek(0, 1)
 								//JCR6.JERROR = $"Illegal tag in FILE part {ftag} on fatpos {bt.Position}";
@@ -595,6 +621,7 @@ namespace Slyvina {
 							}
 							ftag = bt->ReadByte();
 						}
+						while (Prefixed(nb->Name(), "/")) nb->Name(nb->Name().substr(1)); // Jalondi fix
 						var centry = Upper(nb->Name());
 						ret->_Entries[centry] = nb;
 					}
@@ -640,10 +667,9 @@ namespace Slyvina {
 							   fmt.Printf("= ValConv:     %d\n",deppath)
 							   fmt.Printf("= Prio entnum  %d\n",len(ret.Entries))
 						}*/
-						if (deppatha) {
-							deppath = 1;
-						}
-						if (owndir != "") { owndir += "/"; }
+						if (deppatha) deppath = 1;
+						
+						if (owndir != "")  owndir += "/"; 
 						depgetpaths[0].push_back(owndir);
 						depgetpaths[1].push_back(owndir);
 						// TODO: JCR6: depgetpaths[1] = append(depgetpaths[1], dirry.Dirry("$AppData$/JCR6/Dependencies/") )
@@ -658,10 +684,8 @@ namespace Slyvina {
 										fmt.Printf("It seems %s doesn't exist!!\n",depdir+depfile)
 									}*/
 							}
-						} else {
-							if (FileExists(depfile)) {
-								depcall = depfile;
-							}
+						} else if (FileExists(depfile)) {
+								depcall = depfile;							
 						}
 						if (depcall != "") {
 							ret->Patch(depcall);
@@ -719,6 +743,8 @@ namespace Slyvina {
 		}
 
 #pragma endregion
+
+
 #pragma region ActualInitJCR6
 		inline void __InitJCR6() {
 			_ClearError();
@@ -739,9 +765,4 @@ namespace Slyvina {
 #pragma endregion
 
 	}
-
-
-
-
-
 }
