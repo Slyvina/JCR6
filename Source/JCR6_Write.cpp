@@ -1,26 +1,31 @@
-// Lic:
-// JCR6/Source/JCR6_Write.cpp
-// Slyvina - JCR6 - Writer
-// version: 24.10.08
-// Copyright (C) 2022, 2023, 2024 Jeroen P. Broks
-// This software is provided 'as-is', without any express or implied
-// warranty.  In no event will the authors be held liable for any damages
-// arising from the use of this software.
-// Permission is granted to anyone to use this software for any purpose,
-// including commercial applications, and to alter it and redistribute it
-// freely, subject to the following restrictions:
-// 1. The origin of this software must not be misrepresented; you must not
-// claim that you wrote the original software. If you use this software
-// in a product, an acknowledgment in the product documentation would be
-// appreciated but is not required.
-// 2. Altered source versions must be plainly marked as such, and must not be
-// misrepresented as being the original software.
-// 3. This notice may not be removed or altered from any source distribution.
-// EndLic
+// License:
+// 	JCR6/Source/JCR6_Write.cpp
+// 	Slyvina - JCR6 - Writer
+// 	version: 24.10.28
+// 
+// 	Copyright (C) 2022, 2023, 2024 Jeroen P. Broks
+// 
+// 	This software is provided 'as-is', without any express or implied
+// 	warranty.  In no event will the authors be held liable for any damages
+// 	arising from the use of this software.
+// 
+// 	Permission is granted to anyone to use this software for any purpose,
+// 	including commercial applications, and to alter it and redistribute it
+// 	freely, subject to the following restrictions:
+// 
+// 	1. The origin of this software must not be misrepresented; you must not
+// 	   claim that you wrote the original software. If you use this software
+// 	   in a product, an acknowledgment in the product documentation would be
+// 	   appreciated but is not required.
+// 	2. Altered source versions must be plainly marked as such, and must not be
+// 	   misrepresented as being the original software.
+// 	3. This notice may not be removed or altered from any source distribution.
+// End License
+
 #include <JCR6_Write.hpp>
 
 
-#define JCR6_Debug
+#undef JCR6_Debug
 
 
 #ifdef JCR6_Debug
@@ -45,12 +50,14 @@ namespace Slyvina {
 				JCR6_Panic("I cannot compress with unknown storage method \"" + Storage + "\"", _MainFile, Entry); 
 				return nullptr; 
 			}
+			while (Prefixed(Entry, "/")) Entry = Entry.substr(1); // Entry names should NEVER start with a '/'
+			if (!Entry.size()) { JCR6_Panic("Entry without a name!",_MainFile,"???"); return nullptr; }
 			//return std::make_shared<_JT_CreateStream>(this, Entry, Storage, Author, Notes, _Endian);
 			return NewCreateStream(this, Entry, Storage, Author, Notes, _Endian);
 		}
 
 		void _JT_Create::NewStringMap(StringMap data, std::string Entry, std::string Storage, std::string Author, std::string Notes) {
-			var bt = nb(Entry, Storage, Author, Notes, Endian::Little);
+			auto bt{ nb(Entry, Storage, Author, Notes, Endian::Little) };
 			if (bt == nullptr) {
 				//JCR6.Fail($"Failed to create entry {Entry}, with storage method {Storage}!\t{JCR6.JCATCH}", MainFile, Entry);
 				JCR6_Panic(
@@ -77,36 +84,34 @@ namespace Slyvina {
 		}
 
 		void _JT_Create::JCRCopy(JT_Dir OriginalJCR, std::string OriginalEntry, std::string TargetEntry) {
-			{
-				//JCR6.ErrorReset();
-				Last()->Error = false;
-				//try {
-				if (!OriginalJCR->EntryExists(OriginalEntry)) {
-					JCR6_Panic("Cannot copy non-existent entry: " + OriginalEntry + "!", _MainFile, TargetEntry); return;
-				}
-				var oe = OriginalJCR->_Entries[Upper(OriginalEntry)]; if (oe->Block() > 0) { JCR6_Panic("Cannot copy entry that is part of a block: " + OriginalEntry, _MainFile, TargetEntry); return; }
-				var bi = ReadFile(oe->MainFile); //QuickStream.ReadFile(oe.MainFile); bi.Position = oe.Offset;
-				var buf = bi->ReadBytes(oe->CompressedSize());
-				var ne = std::make_shared<_JT_Entry>(); //new TJCREntry();
-				// Make sure all data is there, even the less common data!
-
-				/* Old C# code kept for reference
-				foreach(string k in oe.databool.Keys) ne.databool[k] = oe.databool[k];
-				foreach(string k in oe.dataint.Keys) ne.dataint[k] = oe.dataint[k];
-				foreach(string k in oe.datastring.Keys) ne.datastring[k] = oe.datastring[k];
-				*/
-				for (auto kv : oe->_ConfigBool) ne->_ConfigBool[kv.first] = kv.second;
-				for (auto kv : oe->_ConfigInt) ne->_ConfigInt[kv.first] = kv.second;
-				for (auto kv : oe->_ConfigString) ne->_ConfigString[kv.first] = kv.second;
-				if (TargetEntry != "") ne->_ConfigString["__Entry"] = TargetEntry; //ne.Entry = TargetEntry;
-				ne->_ConfigInt["__Offset"] = (int)mystream->Size(); //ne.Offset = (int)mystream.Position;
-				mystream->Write(*buf, false);
-				Entries[Upper(ne->Name())] = ne;
-				bi->Close();
-				//} catch (Exception Uitzondering) {
-				//	JCR6.Fail($".NET Exception during JCRCopy: {Uitzondering.Message}", $"<OriResource> => {MainFile}", $"({OriginalEntry} => {TargetEntry}");
-				//}
+			//JCR6.ErrorReset();
+			Last()->Error = false;
+			//try {
+			if (!OriginalJCR->EntryExists(OriginalEntry)) {
+				JCR6_Panic("Cannot copy non-existent entry: " + OriginalEntry + "!", _MainFile, TargetEntry); return;
 			}
+			var oe = OriginalJCR->_Entries[Upper(OriginalEntry)]; if (oe->Block() > 0) { JCR6_Panic("Cannot copy entry that is part of a block: " + OriginalEntry, _MainFile, TargetEntry); return; }
+			var bi = ReadFile(oe->MainFile); //QuickStream.ReadFile(oe.MainFile); bi.Position = oe.Offset;
+			var buf = bi->ReadBytes(oe->CompressedSize());
+			var ne = std::make_shared<_JT_Entry>(); //new TJCREntry();
+			// Make sure all data is there, even the less common data!
+
+			/* Old C# code kept for reference
+			foreach(string k in oe.databool.Keys) ne.databool[k] = oe.databool[k];
+			foreach(string k in oe.dataint.Keys) ne.dataint[k] = oe.dataint[k];
+			foreach(string k in oe.datastring.Keys) ne.datastring[k] = oe.datastring[k];
+			*/
+			for (auto kv : oe->_ConfigBool) ne->_ConfigBool[kv.first] = kv.second;
+			for (auto kv : oe->_ConfigInt) ne->_ConfigInt[kv.first] = kv.second;
+			for (auto kv : oe->_ConfigString) ne->_ConfigString[kv.first] = kv.second;
+			if (TargetEntry != "") ne->_ConfigString["__Entry"] = TargetEntry; //ne.Entry = TargetEntry;
+			ne->_ConfigInt["__Offset"] = (int)mystream->Size(); //ne.Offset = (int)mystream.Position;
+			mystream->Write(*buf, false);
+			Entries[Upper(ne->Name())] = ne;
+			bi->Close();
+			//} catch (Exception Uitzondering) {
+			//	JCR6.Fail($".NET Exception during JCRCopy: {Uitzondering.Message}", $"<OriResource> => {MainFile}", $"({OriginalEntry} => {TargetEntry}");
+			//}
 		}
 
 		void _JT_Create::Alias(std::string original, std::string target) {
@@ -136,16 +141,20 @@ namespace Slyvina {
 
 		}
 
-		void _JT_Create::CloseAllEntries() {
+		int _JT_Create::CloseAllEntries() {
+			int cnt{ 0 };
 			std::vector<JT_CreateStream> tl{};
-			for (var s : OpenEntries) { tl.push_back(s.second); }
+			for (var s : OpenEntries) { tl.push_back(s.second); ++cnt; }
 			for (var s : tl) { s->Close(); }
+			return cnt;
 		}
 
-		void _JT_Create::CloseAllBlocks() {
+		int _JT_Create::CloseAllBlocks() {
+			int cnt{ 0 };
 			std::vector<JT_CreateBlock> tl{};
-			for (var s : OpenBlocks) { tl.push_back(s.second); }
+			for (var s : OpenBlocks) { tl.push_back(s.second); ++cnt; }
 			for (var s : tl) { s->Close(); }
+			return cnt;
 		}
 
 		void _JT_Create::AddString(std::string mystring, std::string Entry, std::string Storage, std::string Author, std::string Notes) {
@@ -288,7 +297,6 @@ namespace Slyvina {
 			//} catch (Exception E) {
 			//	JCR6.Fail($"<CREATE:{MainFile}>.Close(): {E.Message}", MainFile, "N/A");
 			//}
-
 		}
 
 		_JT_Create::_JT_Create(std::string OutputFile, std::string FTStorage, std::string Signature) {
