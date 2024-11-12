@@ -1,7 +1,7 @@
 // License:
 // 	JCR6/Headers/JCR6_Core.hpp
 // 	Slyvina - JCR6 - Core (header)
-// 	version: 24.10.25
+// 	version: 24.11.12
 // 
 // 	Copyright (C) 2022, 2023, 2024 Jeroen P. Broks
 // 
@@ -21,25 +21,6 @@
 // 	   misrepresented as being the original software.
 // 	3. This notice may not be removed or altered from any source distribution.
 // End License
-// Lic:
-// JCR6/Headers/JCR6_Core.hpp
-// Slyvina - JCR6 - Core (header)
-// version: 24.07.18
-// Copyright (C) 2022, 2023, 2024 Jeroen P. Broks
-// This software is provided 'as-is', without any express or implied
-// warranty.  In no event will the authors be held liable for any damages
-// arising from the use of this software.
-// Permission is granted to anyone to use this software for any purpose,
-// including commercial applications, and to alter it and redistribute it
-// freely, subject to the following restrictions:
-// 1. The origin of this software must not be misrepresented; you must not
-// claim that you wrote the original software. If you use this software
-// in a product, an acknowledgment in the product documentation would be
-// appreciated but is not required.
-// 2. Altered source versions must be plainly marked as such, and must not be
-// misrepresented as being the original software.
-// 3. This notice may not be removed or altered from any source distribution.
-// EndLic
 
 #pragma once
 
@@ -92,18 +73,18 @@ namespace Slyvina {
 
 #pragma region Drivers_Basis
 
-		typedef struct {
+		struct JD_DirDriver {
 			std::string Name;
-			bool (*Recognize)(std::string File);
-			JT_Dir (*Dir)(std::string File, std::string Prefix);
-		} JD_DirDriver;
+			bool (*Recognize)(std::string File) { nullptr };
+			JT_Dir(*Dir)(std::string File, std::string Prefix) { nullptr };
+		} ;
 		void RegisterDirDriver(JD_DirDriver Driver);
 
-		typedef struct {
+		struct JC_CompressDriver {
 			std::string Name; // Name of the driver. Now please note that names must be in full lower case. Caps in any letter are reserved
-			int (*Compress) (char* Uncompressed, char* Compressed, int size_uncompressed,std::string Main, std::string Ent); // This function will need to do the compression and return the size of the compressed data, or -1 if something went wrong.
-			bool (*Expand)(char* Compressed, char* UnCompressed, int size_compressed, int size_uncompressed, std::string Main, std::string Ent); // This function will expand. The size_compressed parameter will check if the expanded data is indeed as long as we wanted. Will return 'true' if succesful, and 'false' if failed.
-		} JC_CompressDriver;
+			int (*Compress) (char* Uncompressed, char* Compressed, int size_uncompressed, std::string Main, std::string Ent) { nullptr }; // This function will need to do the compression and return the size of the compressed data, or -1 if something went wrong.
+			bool (*Expand)(char* Compressed, char* UnCompressed, int size_compressed, int size_uncompressed, std::string Main, std::string Ent) { nullptr }; // This function will expand. The size_compressed parameter will check if the expanded data is indeed as long as we wanted. Will return 'true' if succesful, and 'false' if failed.
+		};
 		void RegisterCompressDriver(JC_CompressDriver Driver);
 
 		std::map<std::string, JC_CompressDriver>* GetCompDrivers();
@@ -261,7 +242,7 @@ namespace Slyvina {
 			std::map <std::string, std::string> dataString;
 			inline int CompressedSize() { return dataInt["__CSize"]; }			
 			inline int RealSize() {	return dataInt["__Size"]; }
-			inline int Offset() { return dataInt["__Offset"]; }
+			inline int Offset() { return dataInt["__Offset"]+Correction; }
 			inline _JT_Block(int _ID, std::string _MF) { ID = _ID; MainFile = _MF; }
 		};
 
