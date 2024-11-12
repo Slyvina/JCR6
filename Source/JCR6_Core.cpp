@@ -1,7 +1,7 @@
 // License:
 // 	JCR6/Source/JCR6_Core.cpp
 // 	Slyvina - JCR6 - Core
-// 	version: 24.10.30
+// 	version: 24.11.12
 // 
 // 	Copyright (C) 2022, 2023, 2024 Jeroen P. Broks
 // 
@@ -229,6 +229,7 @@ namespace Slyvina {
 				FlushBlock();
 				auto comp = new char[BLK->CompressedSize()]; //JT_EntryReader comp{ BLK.CompressedSize() };
 				bt.seekg(BLK->Offset());
+				//printf("DEBUG: Block true offset: %d + Correction %d => %d", BLK->dataInt["__Offset"], BLK->Correction, BLK->Offset());
 				bt.read(comp, BLK->CompressedSize());
 				_LastBlockBuf = new char[BLK->RealSize()];
 				CompDrivers[storage].Expand(comp, _LastBlockBuf, BLK->CompressedSize(), BLK->RealSize(),E->MainFile, TrSPrintF("%s (BLOCK #%d)",E->Name().c_str(), E->Block()));
