@@ -1,7 +1,7 @@
 // License:
 // 	JCR6/Source/JCR6_Write.cpp
 // 	Slyvina - JCR6 - Writer
-// 	version: 24.10.28
+// 	version: 24.11.07
 // 
 // 	Copyright (C) 2022, 2023, 2024 Jeroen P. Broks
 // 
@@ -277,7 +277,7 @@ namespace Slyvina {
 				var drv = (*adrv)[fts];
 				var _packed = new char[packed_Length];
 				var packed = _packed;
-				packed_Length = drv.Compress(unpacked, _packed, unpacked_Length,MainFile(),"* File Table *");
+				packed_Length = drv.Compress(unpacked, _packed, (int)unpacked_Length,MainFile(),"* File Table *");
 				if (fts != "Store" || packed_Length >= unpacked_Length) { packed = unpacked; packed_Length = unpacked_Length; fts = "Store"; }
 				//for (size_t i = 0; i < unpacked_Length; i++) std::cout << unpacked[i]; std::cout << "\n"; // DEBUG ONLY
 				//bt.Close();
