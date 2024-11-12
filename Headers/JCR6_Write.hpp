@@ -1,7 +1,7 @@
 // License:
 // 	JCR6/Headers/JCR6_Write.hpp
 // 	Slyvina - JCR6 - Writer (header)
-// 	version: 24.10.28
+// 	version: 24.11.07
 // 
 // 	Copyright (C) 2022, 2023, 2024 Jeroen P. Broks
 // 
@@ -304,6 +304,12 @@ namespace Slyvina {
 			}
 
 			void AddFile(std::string OriginalFile, std::string Entry, std::string Author = "", std::string Notes = "");
+			void AddString(std::string SrcString, std::string Entry, std::string Author = "", std::string Notes = "") {
+				auto s = nb(Entry, Author, Notes);
+				if (!s) return;
+				s->Write(SrcString, true);
+				s->Close();
+			}
 
 			void CloseAllEntries();
 
