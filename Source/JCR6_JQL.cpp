@@ -1,7 +1,7 @@
 // License:
 // 	JCR6/Source/JCR6_JQL.cpp
 // 	JCR Quick Link
-// 	version: 24.10.20
+// 	version: 24.11.16
 // 
 // 	Copyright (C) 2023, 2024 Jeroen P. Broks
 // 
@@ -21,25 +21,6 @@
 // 	   misrepresented as being the original software.
 // 	3. This notice may not be removed or altered from any source distribution.
 // End License
-// Lic:
-// JCR6/Source/JCR6_JQL.cpp
-// JCR Quick Link
-// version: 24.10.05
-// Copyright (C) 2023, 2024 Jeroen P. Broks
-// This software is provided 'as-is', without any express or implied
-// warranty.  In no event will the authors be held liable for any damages
-// arising from the use of this software.
-// Permission is granted to anyone to use this software for any purpose,
-// including commercial applications, and to alter it and redistribute it
-// freely, subject to the following restrictions:
-// 1. The origin of this software must not be misrepresented; you must not
-// claim that you wrote the original software. If you use this software
-// in a product, an acknowledgment in the product documentation would be
-// appreciated but is not required.
-// 2. Altered source versions must be plainly marked as such, and must not be
-// misrepresented as being the original software.
-// 3. This notice may not be removed or altered from any source distribution.
-// EndLic
 
 /********************************************************
  * I will admit that this will look UGLY!
@@ -207,6 +188,27 @@ namespace Slyvina { //namespace UseJCR6 {
 						ccase2("NOTES", "NTS") {
 							notes = c->parameter;
 							//break;
+						}
+						ccase("ALIAS") {
+							var p = FindFirst(c->parameter, '>'); 
+							if (p < 0) {
+								std::cout << "\x1b[31mJQL ERROR! \x1b[96mSyntax error: \x1b[92m" << s << "\x1b[0m\n";
+							} else {
+								var rw = c->parameter.substr(0, p);
+								var tg = c->parameter.substr(p + 1);
+								if (rw == "") throw runtime_error("ALIAS no original");
+								if (tg == "") throw runtime_error("ALIAS no target");
+								if (!ret->EntryExists(rw)) throw runtime_error("Original for alias doesn't exist!");
+								var
+									ori{ ret->Entry(rw) },
+									tar{  make_shared<_JT_Entry>() };
+								tar->MainFile = ori->MainFile;
+								for (auto ai : ori->_ConfigString) tar->_ConfigString[ai.first] = ai.second;
+								for (auto ai : ori->_ConfigBool) tar->_ConfigBool[ai.first] = ai.second;
+								for (auto ai : ori->_ConfigInt) tar->_ConfigInt[ai.first] = ai.second;
+								tar->_ConfigString["__Entry"] = tg;
+								ret->_Entries[Upper(tar->Name())] = tar;
+							}
 						}
 						ccase("RAW") {
 							var p = FindFirst(c->parameter, '>');
