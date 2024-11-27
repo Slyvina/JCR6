@@ -1,7 +1,7 @@
 // License:
 // 	JCR6/Headers/JCR6_Core.hpp
 // 	Slyvina - JCR6 - Core (header)
-// 	version: 24.11.12
+// 	version: 24.11.27
 // 
 // 	Copyright (C) 2022, 2023, 2024 Jeroen P. Broks
 // 
@@ -212,6 +212,11 @@ namespace Slyvina {
 			inline std::string Notes() { return _ConfigString["__Notes"]; }
 			inline std::string Storage() { return _ConfigString["__Storage"]; }
 			inline void Name(std::string _n) { 
+				if (!this) {
+					String E = "ENTRY IS NIL. CANNOT ASSIGN NAME: " + _n;
+					JCR6_Panic(E, "?", _n);
+					return;
+				}
 				_ConfigString["__Entry"] = Units::ChReplace(_n, '\\', '/'); 
 				auto v{ _ConfigString["__Entry"] };
 				do { 
