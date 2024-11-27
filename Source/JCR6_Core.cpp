@@ -1,7 +1,7 @@
 // License:
 // 	JCR6/Source/JCR6_Core.cpp
 // 	Slyvina - JCR6 - Core
-// 	version: 24.11.12
+// 	version: 24.11.24
 // 
 // 	Copyright (C) 2022, 2023, 2024 Jeroen P. Broks
 // 
@@ -299,7 +299,7 @@ namespace Slyvina {
 			auto CDir{ Upper(ChReplace(Dir, '\\', '/')) };
 			auto PDir{ CDir };
 			if (CDir.size() && CDir[CDir.size() - 1] != '/') CDir += '/';
-			if (PDir.size() && PDir[PDir.size() - 1] == '/') Left(PDir, PDir.size() - 1);
+			if (PDir.size() && PDir[PDir.size() - 1] == '/') Left(PDir, (unsigned int)PDir.size() - 1);
 			for (auto& EI : _Entries) {
 				if (!CDir.size()) {
 					if (allowrecursive || ExtractDir(EI.first) == "") ret->push_back(EI.second->Name());					
@@ -377,7 +377,7 @@ namespace Slyvina {
 			auto ret{ false };
 			auto bt{ ReadFile(File) };
 			ret = bt->Size() > 10; // I don't believe a JCR6 file can even get close to that!
-			auto gotheader{ bt->ReadString(strlen(checkheader)) };
+			auto gotheader{ bt->ReadString((int)strlen(checkheader)) };
 			ret = ret && gotheader == checkheader;
 			Chat("File '" << File << "' is " << bt->Size() << " bytes long.");
 			Chat("=> CheckHeader: " << checkheader);
