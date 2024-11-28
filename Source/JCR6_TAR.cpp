@@ -1,7 +1,7 @@
 // License:
 // 	JCR6/Source/JCR6_TAR.cpp
 // 	TAR Driver for JCR6
-// 	version: 24.11.27
+// 	version: 24.11.28
 // 
 // 	Copyright (C) 2024 Jeroen P. Broks
 // 
@@ -25,6 +25,7 @@
 #include <iostream>
 #include <SlyvStream.hpp>
 #include <SlyvSTOI.hpp>
+#include <cstring>
 
 using namespace Slyvina::Units;
 
