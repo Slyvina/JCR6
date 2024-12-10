@@ -1,7 +1,7 @@
 // License:
 // 	JCR6/Headers/JCR6_Core.hpp
 // 	Slyvina - JCR6 - Core (header)
-// 	version: 24.11.27
+// 	version: 24.12.07
 // 
 // 	Copyright (C) 2022, 2023, 2024 Jeroen P. Broks
 // 
@@ -253,6 +253,7 @@ namespace Slyvina {
 
 
 		inline JT_Dir JCR6_Dir(std::string F, std::string p = "") { return _JT_Dir::GetDir(F, p); }
+		inline std::string JCR6_Recognize(std::string File) { return _JT_Dir::Recognize(File); }
 #pragma endregion
 	}
 }
