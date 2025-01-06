@@ -1,7 +1,7 @@
 // License:
 // 	JCR6/Source/JCR6_JQL.cpp
 // 	JCR Quick Link
-// 	version: 24.11.16
+// 	version: 24.12.31
 // 
 // 	Copyright (C) 2023, 2024 Jeroen P. Broks
 // 
@@ -67,11 +67,14 @@ using namespace Slyvina::Units;
 namespace Slyvina { //namespace UseJCR6 {
 	namespace JCR6 {
 
+		bool JQL_VerboseNonCriticalErrors{ false };
+
 #pragma region JQL
 		//class JCR_QuickLink :TJCRBASEDRIVER {
 
 		class _QP {
 		public:
+			static std::map<String, String>* qpvars;
 			std::string commando{};
 			std::string parameter{};
 			_QP(std::string p) {
@@ -82,9 +85,19 @@ namespace Slyvina { //namespace UseJCR6 {
 				} else {
 					commando = Upper(p.substr(0, i));
 					parameter = p.substr(i + 1);
+					if (qpvars) {
+						try {
+							for (auto v : (*qpvars)) {
+								parameter = StReplace(parameter, "$" + v.first + "$", v.second);
+							}
+						} catch (runtime_error e) {
+							if (JQL_VerboseNonCriticalErrors) cout << "ERROR: " << e.what() << " << " << p << "\n";
+						}
+					}
 				}
 			}
 		};
+		std::map<String, String>* _QP::qpvars{ nullptr };
 		typedef shared_ptr<_QP> QP;
 
 
@@ -142,15 +155,32 @@ namespace Slyvina { //namespace UseJCR6 {
 					s = RL(BT);
 				} while (s == "" || Prefixed(s, "#"));
 				if (s != "JQL") throw runtime_error("JQL not properly headed!");
+				var onplatform{ Upper(Platform()) };
 				var optional = true;
 				var author = string("");
 				var notes = string("");
+				std::map<String, String> vars{ {"PLATFORM",Platform()} };
+				_QP::qpvars = &vars;
+				vars["PWD"] = CurrentDir();
+				string platform{ "ALL" };
 				while (!BT->EndOfFile()) {
+					_QP::qpvars = &vars;
 					s = RL(BT);
-					var c = _new(_QP, s);
-					if (s != "" && (!Prefixed(s, "#"))) {
+					var c = _new(_QP, s);					
+					if (c->commando == "PLATFORM") {
+						platform = Upper(c->parameter == "" ? "ALL" : c->parameter);
+					}
+					if (s != "" && (!Prefixed(s, "#")) && (platform=="ALL" || platform==onplatform)) {
 						//switch (c->commando) {
 						if (false) {}
+						ccase2("VAR", "LET") {
+							auto p{ IndexOf(c->parameter,'=') };
+							if (p < 0) { throw runtime_error("LET syntax error >> " + s); }
+							auto key{ Trim(Upper(c->parameter.substr(0,p))) };
+							auto val{ c->parameter.substr(p + 1) };
+							vars[key] = val;
+						}
+						ccase("KILL") vars.erase(Trim(Upper(c->parameter)));
 						ccase2("REQUIRED", "REQ") {
 							optional = false;
 							//break;
@@ -168,6 +198,7 @@ namespace Slyvina { //namespace UseJCR6 {
 									throw runtime_error(TrSPrintF("Patch error %s", Last()->ErrorMessage.c_str())); //new Exception($"Patch error {JCR6.JERROR}");
 								}
 								ret->Patch(p, fpath);
+								_QP::qpvars = &vars;
 							} else {
 								var rw = ChReplace(Trim(c->parameter.substr(0, to)), '\\', '/'); //c.parameter.Substring(0, to).Trim().Replace("\\", "/");
 								var tg = ChReplace(Trim(c->parameter.substr(to + 1)), '\\', '/'); //c.parameter.Substring(to + 1).Trim().Replace("\\", "/");
@@ -178,13 +209,14 @@ namespace Slyvina { //namespace UseJCR6 {
 									throw runtime_error(TrSPrintF("Patch error %s", Last()->ErrorMessage.c_str())); //new Exception($"Patch error {JCR6.JERROR}");
 								}
 								ret->Patch(p, fpath + tg);
+								_QP::qpvars = &vars;
 							}
 							//break;
 						}
 						ccase2("AUTHOR", "AUT") {
 							author = c->parameter;
 							//break;
-						}
+						} 
 						ccase2("NOTES", "NTS") {
 							notes = c->parameter;
 							//break;
@@ -252,14 +284,16 @@ namespace Slyvina { //namespace UseJCR6 {
 								ds = ChReplace(Trim(c->parameter.substr(0, p)), '\\', '/'); //c.parameter.Substring(0, to).Trim().Replace("\\", "/");
 								dt = ChReplace(Trim(c->parameter.substr(p + 1)), '\\', '/')+"/";
 							}
-							if (DirectoryExists(ds)) {
+							//if (DirectoryExists(ds)) {
+							if (IsDir(ds)) {
 								auto p = GetTree(ds);
+								if ((!p->size()) && JQL_VerboseNonCriticalErrors) { cout << "\7\x1b[94mWARNING!\t\x1b[0mDirectory " << ds << " was requested for RAWDIR, but turns out to be empty!\n"; }
 								for (auto f : *p) {
 									string rw{ ds + "/" + f };
 									rw = StReplace(rw, "//", "/");
-									if (_JT_Dir::Recognize(rw)!="NONE") {
+									if (_JT_Dir::Recognize(rw) != "NONE") {
 										var ijcr = JCR6_Dir(rw);
-										for(var eij : ijcr->_Entries) {
+										for (var eij : ijcr->_Entries) {
 											auto  nname{ dt + "/" + f + "/" + eij.second->Name() };
 											while (nname[0] == '/') nname = nname.substr(1);
 											eij.second->Name(nname);
@@ -269,7 +303,7 @@ namespace Slyvina { //namespace UseJCR6 {
 										var e = make_shared<_JT_Entry>(); //= new TJCREntry();
 										var ename{ StReplace(fpath + dt,"//","/") };
 										e->_ConfigString["__Entry"] = ename;
-										if (e->Name().size()) e->_ConfigString["__Entry"] += "/";										
+										if (e->Name().size()) e->_ConfigString["__Entry"] += "/";
 										e->Name(e->_ConfigString["__Entry"] + f); //e.Entry = tg;
 										//cout << "Raw: " << rw << " to " << e->Name() << "\n"; // debug only
 										e->MainFile = rw;
@@ -283,8 +317,15 @@ namespace Slyvina { //namespace UseJCR6 {
 										ret->_Entries[Upper(e->Name())] = e;
 									}
 								}
-							} else if (!optional) throw runtime_error("Required raw Directory '"+ds+"' not found");
+														
+							} else {
+								if (!optional) throw runtime_error("Required raw Directory '" + ds + "' not found");
+								if (JQL_VerboseNonCriticalErrors) {
+									cout << "\7\x1b[94mWARNING!\t\x1b[0mDirectory " << ds << " was requested for RAWDIR, but doesn't seem to exist at all\t(Called from "<<CurrentDir()<<")\n";
+								}
+							}
 						}
+						ccase("PLATFORM") {} // Prevent crap
 						ccase2("TEXT", "TXT") {
 							var tg = ChReplace(Trim(c->parameter), '\\', '/'); //c.parameter.Trim().Replace("\\", "/");
 							if (tg.size() > 1 && tg[1] == ':') tg = tg.substr(2);
