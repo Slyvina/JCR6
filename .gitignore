@@ -7,7 +7,7 @@ Thumbs.db
 *.dll
 !zlib.dll
 *.exe
-
+*.o
 
 # 3rdParty/zlib/src/
 3rdParty/zlib/src.rar

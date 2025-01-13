@@ -1,9 +1,9 @@
 // License:
 // 	JCR6/Source/JCR6_Write.cpp
 // 	Slyvina - JCR6 - Writer
-// 	version: 24.11.07
+// 	version: 25.01.13
 // 
-// 	Copyright (C) 2022, 2023, 2024 Jeroen P. Broks
+// 	Copyright (C) 2022, 2023, 2024, 2025 Jeroen P. Broks
 // 
 // 	This software is provided 'as-is', without any express or implied
 // 	warranty.  In no event will the authors be held liable for any damages
@@ -195,6 +195,7 @@ namespace Slyvina {
 			var buf = rs->ReadBytes(rsize);
 			rs->Close();
 			var ws = nb(Entry, Storage, Author, Notes);
+			if (!ws) return;
 			ws->WriteBytes(*buf);
 			ws->Close();
 		}

@@ -1,9 +1,9 @@
 // License:
 // 	JCR6/Source/JCR6_JQL.cpp
 // 	JCR Quick Link
-// 	version: 24.12.31
+// 	version: 25.01.13
 // 
-// 	Copyright (C) 2023, 2024 Jeroen P. Broks
+// 	Copyright (C) 2023, 2024, 2025 Jeroen P. Broks
 // 
 // 	This software is provided 'as-is', without any express or implied
 // 	warranty.  In no event will the authors be held liable for any damages
@@ -49,7 +49,7 @@
 #define var auto
 #define _new(t,p) std::shared_ptr<t>(new t(p))
 
-#define ccase(a)  else if (c->commando==a) 
+#define ccase(a)  else if (c->commando==a)
 #define ccase2(a,b) else if (c->commando==a || c->commando==b)
 
 
@@ -166,7 +166,7 @@ namespace Slyvina { //namespace UseJCR6 {
 				while (!BT->EndOfFile()) {
 					_QP::qpvars = &vars;
 					s = RL(BT);
-					var c = _new(_QP, s);					
+					var c = _new(_QP, s);
 					if (c->commando == "PLATFORM") {
 						platform = Upper(c->parameter == "" ? "ALL" : c->parameter);
 					}
@@ -195,6 +195,7 @@ namespace Slyvina { //namespace UseJCR6 {
 								var p = JCR6_Dir(c->parameter); //JCR6.Dir(c.parameter);
 								if (p == nullptr) {
 									if (optional) goto einde; //break;
+									cout << Last()->ErrorMessage << "\n"<<Last()->MainFile<<" -> "<<Last()->Entry<<"\n";
 									throw runtime_error(TrSPrintF("Patch error %s", Last()->ErrorMessage.c_str())); //new Exception($"Patch error {JCR6.JERROR}");
 								}
 								ret->Patch(p, fpath);
@@ -206,6 +207,7 @@ namespace Slyvina { //namespace UseJCR6 {
 								if (p == nullptr) {
 									if (optional) goto einde;
 									//throw new Exception($"Patch error {JCR6.JERROR}");
+
 									throw runtime_error(TrSPrintF("Patch error %s", Last()->ErrorMessage.c_str())); //new Exception($"Patch error {JCR6.JERROR}");
 								}
 								ret->Patch(p, fpath + tg);
@@ -216,13 +218,13 @@ namespace Slyvina { //namespace UseJCR6 {
 						ccase2("AUTHOR", "AUT") {
 							author = c->parameter;
 							//break;
-						} 
+						}
 						ccase2("NOTES", "NTS") {
 							notes = c->parameter;
 							//break;
 						}
 						ccase("ALIAS") {
-							var p = FindFirst(c->parameter, '>'); 
+							var p = FindFirst(c->parameter, '>');
 							if (p < 0) {
 								std::cout << "\x1b[31mJQL ERROR! \x1b[96mSyntax error: \x1b[92m" << s << "\x1b[0m\n";
 							} else {
@@ -278,7 +280,7 @@ namespace Slyvina { //namespace UseJCR6 {
 							//var rw = ChReplace(c->parameter, '\\', '/');
 							//var tg = rw;
 							string ds{ "" }, dt{ "" };
-							if (p < 0) 
+							if (p < 0)
 								ds = c->parameter;
 							else {
 								ds = ChReplace(Trim(c->parameter.substr(0, p)), '\\', '/'); //c.parameter.Substring(0, to).Trim().Replace("\\", "/");
@@ -317,7 +319,7 @@ namespace Slyvina { //namespace UseJCR6 {
 										ret->_Entries[Upper(e->Name())] = e;
 									}
 								}
-														
+
 							} else {
 								if (!optional) throw runtime_error("Required raw Directory '" + ds + "' not found");
 								if (JQL_VerboseNonCriticalErrors) {
@@ -368,12 +370,20 @@ namespace Slyvina { //namespace UseJCR6 {
 							ret->Patch(c->parameter, fpath);
 						//break;
 						ccase("FROM") {
+						    #if SlyvWindows
 							auto P = Upper(c->parameter);
+							#else
+							auto P{c->parameter};
+							#endif
 							if (MapFrom.count(P)) {
 								From = MapFrom[P];
 							} else {
 								auto F{ JCR6_Dir(P) };
-								if (Last()->Error) throw runtime_error(Last()->ErrorMessage.c_str());
+
+								if (Last()->Error) {
+                                        cout << Last()->ErrorMessage << " -> "<< Last()->MainFile <<" :: "<<Last()->Entry<<"\n";
+                                        throw runtime_error(Last()->ErrorMessage.c_str());
+								}
 								From = F;
 								MapFrom[P] = F;
 							}
@@ -395,18 +405,18 @@ namespace Slyvina { //namespace UseJCR6 {
 							auto ei{ From->Entry(rw) };
 							if (!ei) {
 								std::cout << "\x1b[31mERROR:\x1b[0m Entry to steal turns out to be a null pointer(Entry:" << rw << " from target : " << tg << ")\n";
-								throw std::runtime_error("Entry to steal turns out to be a null pointer (Entry:" + rw + " from target:" + tg + ")"); 
+								throw std::runtime_error("Entry to steal turns out to be a null pointer (Entry:" + rw + " from target:" + tg + ")");
 							}
 							auto eor{ new _JT_Entry() }; *eor = *ei;
 							auto eo{ shared_ptr<_JT_Entry>(eor) };
 							eo->_ConfigString["__Entry"] = fpath + tg;
 							ret->_Entries[Upper(eo->Name())] = eo;
-						} 
+						}
 						ccase("END") {
 							return ret;
 							//default: throw new Exception($"Unknown instruction! {c.commando}");
 						} else {
-							throw runtime_error(TrSPrintF("Unknown instrunction! %s", c->commando.c_str()));                            
+							throw runtime_error(TrSPrintF("Unknown instrunction! %s", c->commando.c_str()));
 						}
 					einde:
 						;
@@ -470,7 +480,7 @@ namespace Slyvina { //namespace UseJCR6 {
 			}
 			return JCR6_Dir(file, fpath);
 		}
-		
+
 #pragma endregion
 
 #pragma region Ini
