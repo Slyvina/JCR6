@@ -1,9 +1,9 @@
 // License:
 // 	JCR6/Source/JCR6_Core.cpp
 // 	Slyvina - JCR6 - Core
-// 	version: 24.11.24
+// 	version: 25.04.30
 // 
-// 	Copyright (C) 2022, 2023, 2024 Jeroen P. Broks
+// 	Copyright (C) 2022, 2023, 2024, 2025 Jeroen P. Broks
 // 
 // 	This software is provided 'as-is', without any express or implied
 // 	warranty.  In no event will the authors be held liable for any damages
@@ -27,6 +27,7 @@
 #include <SlyvString.hpp>
 #include <SlyvStream.hpp>
 #include <SlyvBank.hpp>
+#include <SlyvDir.hpp>
 #include <JCR6_Core.hpp>
 
 
@@ -44,6 +45,8 @@ using namespace Slyvina::Units;
 
 namespace Slyvina {
 	namespace JCR6 {
+
+		bool AllowStoreMismatch{false};
 
 		JP_Panic JCR6PANIC{ nullptr };
 
@@ -79,7 +82,7 @@ namespace Slyvina {
 #pragma region Driver_Registration
 		static map<string, JD_DirDriver> DirDrivers{};
 		static map<string, JC_CompressDriver> CompDrivers{};
-		
+
 
 		void RegisterDirDriver(JD_DirDriver Driver) {
 			if (DirDrivers.count(Driver.Name)) {
@@ -88,7 +91,7 @@ namespace Slyvina {
 			}
 			DirDrivers[Driver.Name] = Driver;
 		}
-		
+
 		void RegisterCompressDriver(JC_CompressDriver Driver) {
 			if (CompDrivers.count(Driver.Name)) {
 				_Error("Compression driver named '" + Driver.Name + "' already exists");
@@ -142,10 +145,10 @@ namespace Slyvina {
 #endif
 				}
 			return "NONE";
-		} 
+		}
 
 		JT_Dir _JT_Dir::GetDir(std::string File, std::string fpath) {
-			__InitJCR6();			
+			__InitJCR6();
 			auto driv = Recognize(File);
 			if (driv == "NONE") { _Error("File not recognized by JCR6", File); return nullptr; }
 			Chat("File '" << File << "' has been recognized as by driver: " << driv << "!");
@@ -207,33 +210,73 @@ namespace Slyvina {
 				Chat("Getting buffer of entry " << _Entry << " from main " << E->MainFile << ";  Size: " << E->RealSize() << "; Compressed: " << E->CompressedSize());
 				if (E->RealSize() < 0) { _NullError("Invalid real size: " + std::to_string(E->RealSize()), E->MainFile, E->Name()); }
 				if (E->CompressedSize() < 0) { _NullError("Invalid compressed size: " + std::to_string(E->CompressedSize()), E->MainFile, E->Name()); }
-				auto comp = new char[E->CompressedSize()];
-				retbuf = new char[E->RealSize()];
-				//data.newbuf(E.RealSize());
-				//std::cout << E.MainFile << "::" << E.Entry() << " (" << E.RealSize() << ")\n"; // debug only
-				bt.read(comp, E->CompressedSize());//bt.read(comp.pointme(), E.CompressedSize());
-				//CompDrivers[storage].Expand(comp.pointme(), data.pointme(), comp.getsize(), data.getsize());
-				CompDrivers[storage].Expand(comp, retbuf,E->CompressedSize(), E->RealSize(),E->MainFile,E->Name());
-				delete[]comp;
-				return retbuf;
+				auto &ud{CompDrivers[storage]};
+				if (ud.Expand1) {
+					auto comp = new char[E->CompressedSize()];
+					retbuf = new char[E->RealSize()];
+					//data.newbuf(E.RealSize());
+					//std::cout << E.MainFile << "::" << E.Entry() << " (" << E.RealSize() << ")\n"; // debug only
+					bt.read(comp, E->CompressedSize());//bt.read(comp.pointme(), E.CompressedSize());
+					//CompDrivers[storage].Expand(comp.pointme(), data.pointme(), comp.getsize(), data.getsize());
+					ud.Expand1(comp, retbuf,E->CompressedSize(), E->RealSize(),E->MainFile,E->Name());
+					delete[]comp;
+					return retbuf;
+				} else if (ud.Expand2) {
+					std::vector<byte> compbuf{},vretbuf{};
+					compbuf.clear();
+					vretbuf.clear();
+					for(size_t i=0; i<E->CompressedSize();++i) {
+						CharByte b;
+						bt.read(&b.ch,1);
+						compbuf.push_back(b.bt);
+					}
+					ud.Expand2(compbuf,vretbuf,E->MainFile,E->Name());
+					retbuf = new  char[vretbuf.size()];
+					for(size_t i=0;i<vretbuf.size();++i) {
+						CharByte c;
+						c.bt      = vretbuf[i];
+						retbuf[i] = c.ch;
+					}
+					return retbuf;
+				} else { _NullError("NonB: Compression driver "+storage+" not not appear to have a proper expansion function.",E->MainFile,_Entry); }
 			}
 			std::string BlockTag{ std::to_string(E->Block()) + ":" + E->MainFile };
 			if (!Blocks.count(BlockTag)) {
-				//cout << "???\n"; for (auto& DBG : Blocks) { cout << BlockTag << "!=" << DBG.first << endl; } // debug				
+				//cout << "???\n"; for (auto& DBG : Blocks) { cout << BlockTag << "!=" << DBG.first << endl; } // debug
 				_NullError("Block for entry " + E->Name() + " not found: " + BlockTag,E->MainFile,_Entry);
 				//return;
 			}
 			//auto BLK{ BlockMap[BlockTag] };
 			auto BLK{ Blocks[BlockTag] };
+			auto EntBlockTag{E->Name()+TrSPrintF(" (BLOCK #%d)",E->Block())};
 			if (BlockTag != _LastBlock) {
 				FlushBlock();
-				auto comp = new char[BLK->CompressedSize()]; //JT_EntryReader comp{ BLK.CompressedSize() };
-				bt.seekg(BLK->Offset());
-				//printf("DEBUG: Block true offset: %d + Correction %d => %d", BLK->dataInt["__Offset"], BLK->Correction, BLK->Offset());
-				bt.read(comp, BLK->CompressedSize());
-				_LastBlockBuf = new char[BLK->RealSize()];
-				CompDrivers[storage].Expand(comp, _LastBlockBuf, BLK->CompressedSize(), BLK->RealSize(),E->MainFile, TrSPrintF("%s (BLOCK #%d)",E->Name().c_str(), E->Block()));
-				delete[] comp;
+				auto& ud{CompDrivers[storage]};
+				if (ud.Expand1) {
+					auto comp = new char[BLK->CompressedSize()]; //JT_EntryReader comp{ BLK.CompressedSize() };
+					bt.seekg(BLK->Offset());
+					//printf("DEBUG: Block true offset: %d + Correction %d => %d", BLK->dataInt["__Offset"], BLK->Correction, BLK->Offset());
+					bt.read(comp, BLK->CompressedSize());
+					_LastBlockBuf = new char[BLK->RealSize()];
+					ud.Expand1(comp, _LastBlockBuf, BLK->CompressedSize(), BLK->RealSize(),E->MainFile, EntBlockTag);
+					delete[] comp;
+				} else if (ud.Expand2) {
+					std::vector<byte> compbuf{},vretbuf{};
+					compbuf.clear();
+					vretbuf.clear();
+					for(size_t i=0; i<BLK->CompressedSize();++i) {
+						CharByte b;
+						bt.read(&b.ch,1);
+						compbuf.push_back(b.bt);
+					}
+					ud.Expand2(compbuf,vretbuf,E->MainFile,BlockTag);
+					retbuf = new char[vretbuf.size()];
+					for(size_t i=0;i<vretbuf.size();++i) {
+						CharByte c;
+						c.bt      = vretbuf[i];
+						retbuf[i] = c.ch;
+					}
+				} else { _NullError("NonB: Compression driver "+storage+" not not appear to have a proper expansion function.",E->MainFile,EntBlockTag); }
 			}
 			retbuf = new char[E->RealSize()]; //data.newbuf(E.RealSize());
 			//auto o{ data.pointme() };
@@ -278,7 +321,7 @@ namespace Slyvina {
 				}
 					  break;
 				default:
-					_NullError("Invalid tag in StringMap", Entry(_Entry)->MainFile, _Entry);
+					_NullError(TrSPrintF("Invalid tag (%02x -> %03d) in StringMap ",ctag,ctag)+std::to_string(bt->Position()), Entry(_Entry)->MainFile, _Entry);
 				}
 			}
 			return ret;
@@ -286,7 +329,7 @@ namespace Slyvina {
 
 		bool _JT_Dir::DirectoryExists(std::string Dir) {
 			if (!Dir.size()) return false;
-			auto CDir{ Upper(ChReplace(Dir, '\\', '/')) }; 
+			auto CDir{ Upper(ChReplace(Dir, '\\', '/')) };
 			if (CDir[CDir.size() - 1] != '/') CDir += '/';
 			for (auto& EI : _Entries) {
 				if (Prefixed(EI.first, CDir)) return true;
@@ -302,13 +345,13 @@ namespace Slyvina {
 			if (PDir.size() && PDir[PDir.size() - 1] == '/') Left(PDir, (unsigned int)PDir.size() - 1);
 			for (auto& EI : _Entries) {
 				if (!CDir.size()) {
-					if (allowrecursive || ExtractDir(EI.first) == "") ret->push_back(EI.second->Name());					
+					if (allowrecursive || ExtractDir(EI.first) == "") ret->push_back(EI.second->Name());
 				} else if (allowrecursive && Prefixed(EI.first,CDir)) {
 					ret->push_back(EI.second->Name());
 				} else if (ExtractDir(EI.first) == PDir) {
 					ret->push_back(EI.second->Name());
 				}
-			}			
+			}
 			return ret;
 		}
 
@@ -329,7 +372,7 @@ namespace Slyvina {
 			if (Block())
 				return _ConfigInt["__Offset"];
 			else
-				return _ConfigInt["__Offset"] + Correction;			
+				return _ConfigInt["__Offset"] + Correction;
 			//*/
 			return Block() ? _ConfigInt["__Offset"] : _ConfigInt["__Offset"] + Correction;
 		}
@@ -339,7 +382,7 @@ namespace Slyvina {
 			if (Block())
 				_ConfigInt["__Offset"] = _offs;
 			else
-				_ConfigInt["__Offset"] = _offs - Correction;				
+				_ConfigInt["__Offset"] = _offs - Correction;
 			//*/
 			_ConfigInt["__Offset"] = Block() ? _offs : _offs - Correction;
 		}
@@ -367,8 +410,8 @@ namespace Slyvina {
 		inline void TrueRecognize(JCR6RecData& RecD,std::string File) {
 			Chat("Trying to recognize '" << File << "' as JCR6");
 			RecD.Correction = 0;
-			RecD.Recognized = false;			
-			if (!FileExists(File)) {
+			RecD.Recognized = false;
+			if (!IsFile(File)) {
 				//_Error("File not found!",File);
 				RecD.Err = "File not found";
 				Chat("Recognize failed on file '" << File << "': File not found!");
@@ -383,7 +426,7 @@ namespace Slyvina {
 			Chat("=> CheckHeader: " << checkheader);
 			Chat("=> GotHeader:   " << gotheader);
 			Chat("=> Recognized: " << ret);
-			if (!ret) {				
+			if (!ret) {
 				auto sz{ bt->Size() }; bt->Seek(sz - 4);
 				auto foot{ bt->ReadString(4) }; Chat("Foot Check" << foot);
 				if (foot == "JCR6") {
@@ -424,7 +467,7 @@ namespace Slyvina {
 				}
 			}
 			bt->Close();
-			RecD.Recognized = ret;			
+			RecD.Recognized = ret;
 		}
 
 		static bool ___JCR6Recognize(string File) {
@@ -443,11 +486,11 @@ namespace Slyvina {
 				if (LastError.Error) return nullptr;
 				_NullError("File not recognized as JCR6, yet it's being loaded by the JCR6 driver", File, "N/A");
 			}
-			auto BT{ ReadFile(File) }; 
+			auto BT{ ReadFile(File) };
 			auto ret{ make_shared<_JT_Dir>() };
 			int correction{ 0 }; if (D.Correction) correction = (int)BT->Size() - D.Correction;
 			BT->Seek(correction);
-			BT->ReadString(strlen(checkheader));			
+			BT->ReadString(strlen(checkheader));
 			// This is just the C# code, which I simply modified in order to work with Slyvina in C++
 			ret->FATOffset = BT->ReadInt();
 			if (ret->FATOffset <= 0) {
@@ -501,26 +544,38 @@ namespace Slyvina {
 #endif
 				_NullError(TrSPrintF("The File Table of file '%s' was packed with the '%s' algorithm, but unfortunately, there is no support for that algoritm yet", File.c_str(), ret->FATStorage.c_str()), File, "N/A");
 			}
-			char* fatcbytes = new char[ret->FATCSize];
-			char* fatbytes = new char[ret->FATSize];
-			BT->ReadChars(fatcbytes, ret->FATCSize);
-			BT->Close();
-			//Console.WriteLine(ret);
-			//var fatbytes = JCR6.CompDrivers[ret.FATstorage].Expand(fatcbytes, ret.FATsize);
-			CompDrivers[ret->FATStorage].Expand(fatcbytes, fatbytes, ret->FATCSize, ret->FATSize,File,"* File Table *");
-			//bt = QuickStream.StreamFromBytes(fatbytes, QuickStream.LittleEndian); // Little Endian is the default, but I need to make sure as JCR6 REQUIRES Little Endian for its directory structures.
-			auto bt{ TurnToBank(fatbytes,ret->FATSize) };
-			//if (fatbytes[fatbytes.Length - 1] != 0xff) {
-			if (Char2Byte(fatbytes[ret->FATSize - 1]) != 0xff) {
-				Chat("fatbytes: Size:" << ret->FATSize << "; last byte: " << (int)fatbytes[ret->FATSize - 1]);
-				//for (size_t i = 0; i < ret->FATSize; ++i) Chat(i << "\t >> " << (int)Char2Byte(fatbytes[i])<<"\t" <<fatbytes[i]); // VERY STRONG DEBUG ONLY!
-				//for (size_t i = 0; i < ret->FATCSize; ++i) Chat(i << "\t >> " << (int)fatcbytes[i]); // VERY STRONG DEBUG ONLY!
-				//				System.Diagnostics.Debug.WriteLine("WARNING! This JCR resource is probably written with the Python Prototype of JCR6 and lacks a proper ending byte.... I'll fix that");
-				_NullError("FAT Ending not proper (JCR6 resource written by the first Python prototype?)", File, "N/A");
-				//var fixfat = new byte[fatbytes.Length + 1];
-				//fixfat[fixfat.Length - 1] = 255;
-				//for (int i = 0; i < fatbytes.Length; i++) fixfat[i] = fatbytes[i];
-				//fatbytes = fixfat;				
+			auto&ud {CompDrivers[ret->FATStorage]};
+			Bank bt{nullptr};
+			if (ud.Expand1) {
+				char* fatcbytes = new char[ret->FATCSize];
+				char* fatbytes = new char[ret->FATSize];
+				BT->ReadChars(fatcbytes, ret->FATCSize);
+				BT->Close();
+				//Console.WriteLine(ret);
+				//var fatbytes = JCR6.CompDrivers[ret.FATstorage].Expand(fatcbytes, ret.FATsize);
+				ud.Expand1(fatcbytes, fatbytes, ret->FATCSize, ret->FATSize,File,"* File Table *");
+				//bt = QuickStream.StreamFromBytes(fatbytes, QuickStream.LittleEndian); // Little Endian is the default, but I need to make sure as JCR6 REQUIRES Little Endian for its directory structures.
+				bt = TurnToBank(fatbytes,ret->FATSize);
+				//if (fatbytes[fatbytes.Length - 1] != 0xff) {
+				if (Char2Byte(fatbytes[ret->FATSize - 1]) != 0xff) {
+					Chat("fatbytes: Size:" << ret->FATSize << "; last byte: " << (int)fatbytes[ret->FATSize - 1]);
+					//for (size_t i = 0; i < ret->FATSize; ++i) Chat(i << "\t >> " << (int)Char2Byte(fatbytes[i])<<"\t" <<fatbytes[i]); // VERY STRONG DEBUG ONLY!
+					//for (size_t i = 0; i < ret->FATCSize; ++i) Chat(i << "\t >> " << (int)fatcbytes[i]); // VERY STRONG DEBUG ONLY!
+					//				System.Diagnostics.Debug.WriteLine("WARNING! This JCR resource is probably written with the Python Prototype of JCR6 and lacks a proper ending byte.... I'll fix that");
+					_NullError("FAT Ending not proper (JCR6 resource written by the first Python prototype?)", File, "N/A");
+					//var fixfat = new byte[fatbytes.Length + 1];
+					//fixfat[fixfat.Length - 1] = 255;
+					//for (int i = 0; i < fatbytes.Length; i++) fixfat[i] = fatbytes[i];
+					//fatbytes = fixfat;
+				}
+			} else if (ud.Expand2) {
+				vector<byte> fatcbytes{},fatbytes{};
+				BT->ReadBytes(fatcbytes,ret->FATCSize);
+				ud.Expand2(fatcbytes,fatbytes,File,"*File Table*");
+				// Expand with a 0xff if the buffer doesn't end on it. The advantage of a vector is (of course) that it's expandable,
+				// And that is why this "autofix" was possible here, but not with the Expand 1 go.
+				if (fatbytes[fatbytes.size()-1]!=0xff) { fatbytes.push_back(0xff); ret->FATSize++; }
+				bt = CreateBank(fatbytes);
 			}
 			//while ((!bt.EOF) && (!theend)) {
 			while (!bt->AtEnd() && (!theend)) {
@@ -533,7 +588,7 @@ namespace Slyvina {
 				case 0x01: {
 					auto tag{ bt->ReadString() };
 					Chat(tag.size() << "\t" << tag);
-					//var tag = bt.ReadString().ToUpper(); //strings.ToUpper(qff.ReadString(btf)); 
+					//var tag = bt.ReadString().ToUpper(); //strings.ToUpper(qff.ReadString(btf));
 					//Console.WriteLine($"Read tag: '{tag}'");
 
 					// Unfortunately strings cannot be used for 'switch' in C++, like it can be done in C#, so yeah, I gotta do this the 'hard way'
@@ -637,8 +692,8 @@ namespace Slyvina {
 							//if impdebug {
 							//    fmt.Printf("%s request from %s\n", tag, file)
 							//                    }
-							// Now we're playing with power. Tha ability of 
-							// JCR6 to automatically patch other files into 
+							// Now we're playing with power. Tha ability of
+							// JCR6 to automatically patch other files into
 							// one resource
 						var deptag = bt->ReadByte();
 						string depk;
@@ -669,8 +724,8 @@ namespace Slyvina {
 							   fmt.Printf("= Prio entnum  %d\n",len(ret.Entries))
 						}*/
 						if (deppatha) deppath = 1;
-						
-						if (owndir != "")  owndir += "/"; 
+
+						if (owndir != "")  owndir += "/";
 						depgetpaths[0].push_back(owndir);
 						depgetpaths[1].push_back(owndir);
 						// TODO: JCR6: depgetpaths[1] = append(depgetpaths[1], dirry.Dirry("$AppData$/JCR6/Dependencies/") )
@@ -686,7 +741,7 @@ namespace Slyvina {
 									}*/
 							}
 						} else if (FileExists(depfile)) {
-								depcall = depfile;							
+								depcall = depfile;
 						}
 						if (depcall != "") {
 							ret->Patch(depcall);
@@ -729,14 +784,19 @@ namespace Slyvina {
 
 
 #pragma region Store
-		static int Store_Compress(char* Uncompressed, char* Compressed, int size_uncompressed,string,string) {
+		static bool Store_Compress(char* Uncompressed, char* Compressed, int size_uncompressed, int& size_compressed, string,string) {
 			Chat("Just copying bytes, as this is 'Store'");
 			for (int i = 0; i < size_uncompressed; ++i) Compressed[i] = Uncompressed[i];
-			return size_uncompressed;
+			//return size_uncompressed;
+			return true;
 		}
 		static bool Store_Expand(char* Compressed, char* UnCompressed, int size_compressed, int size_uncompressed,string,string) {
-			if (size_compressed != size_uncompressed) {
-				_Error(TrSPrintF("STORE: Internal error! Size mismatch %d!=%d", size_compressed, size_uncompressed)); 
+			if (AllowStoreMismatch && size_compressed>size_uncompressed ) {
+				std::cout << '\x07' << "JCR6 WARNING! Something must have gone wrong with storing! I'll try to read the file, but there's no telling if things will go right here!\n";
+				for (int i = 0; i < size_uncompressed; i++) UnCompressed[i] = Compressed[i];
+				return true;
+			} else if (size_compressed != size_uncompressed) {
+				_Error(TrSPrintF("STORE: Internal error! Size mismatch %d!=%d", size_compressed, size_uncompressed));
 				return false;
 			}
 			for (int i = 0; i < size_compressed; i++) UnCompressed[i] = Compressed[i];
@@ -751,9 +811,12 @@ namespace Slyvina {
 			_ClearError();
 			if (!CompDrivers.count("Store")) {
 				Chat("Init 'Store' compression driver!");
-				CompDrivers["Store"].Compress = Store_Compress;
-				CompDrivers["Store"].Expand = Store_Expand;
+				CompDrivers["Store"].Compress1 = Store_Compress;
+				CompDrivers["Store"].Expand1 = Store_Expand;
 				CompDrivers["Store"].Name = "Store";
+			}
+			if (!CompDrivers.count("BRUTE")) {
+				CompDrivers["BRUTE"].Name = "BRUTE"; // It only has to exist!
 			}
 			if (!DirDrivers.count("JCR6")) {
 				Chat("Init 'JCR6' directory driver!");

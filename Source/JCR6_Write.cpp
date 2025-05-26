@@ -1,7 +1,7 @@
 // License:
 // 	JCR6/Source/JCR6_Write.cpp
 // 	Slyvina - JCR6 - Writer
-// 	version: 25.01.13
+// 	version: 25.03.01
 // 
 // 	Copyright (C) 2022, 2023, 2024, 2025 Jeroen P. Broks
 // 
@@ -44,11 +44,77 @@ namespace Slyvina {
 #pragma region JT_Create
 		int _JT_Create::MaxHashSize = 100000;
 
+		static bool CompressStuff(JC_CompressDriver& Drv,char* uncompressed, char *compressed, int suc, int &sc,std::string Main, std::string Entry) {
+			if (Drv.Compress1) {
+				return Drv.Compress1(uncompressed,compressed,suc,sc,Main,Entry);
+			} else if (Drv.Compress2) {
+				CharByte b{};
+				std::vector<byte> uc {}, c{};
+				for(int i=0;i<suc;i++) { b.ch=uncompressed[i]; uc.push_back(b.bt); }
+				auto res{Drv.Compress2(uc,c,Main,Entry)};
+				if (res) {
+					sc=(int)c.size();
+					for(int i=0;i<sc;i++) { b.bt=c[i];compressed[i]=b.ch;}
+				}
+				return res;
+			} else {
+				JCR6_Panic("No proper compression function in driver "+Drv.Name,Main,Entry);
+				return false;
+			}
+		}
+
+		static std::string BRUTE(char* uncompressed, char *compressed, int suc, int &sc,std::string Main, std::string Entry) {
+			//std::cout << "BRUTE not yet active\n";
+			//return "ERROR";
+			auto adrv = GetCompDrivers();
+			char*best{nullptr},*current{nullptr};
+			int bestsize{0};
+			std::string ret {"None"};
+			for(auto idrv:*adrv) {
+				if (Lower(idrv.first)==idrv.first || idrv.first=="Store") {
+					Chat("BRUTE: Trying: "<<idrv.first);
+					current = new char[sc];
+					int usz{sc};
+					CompressStuff(idrv.second,uncompressed,current,suc,usz,Main,Entry+" (BRUTE)");
+					Chat("BRUTE: Result: "<<suc<<" -> "<<usz);
+					Chat("BRUTE: Current address: "<<(uint64)current);
+					if (bestsize==0 || bestsize>usz) {
+						Chat("BRUTE: Best result so far for: "<<idrv.first);
+						bestsize=usz;
+						if (best) { delete[] best; Chat("BRUTE: Delete old best!");}
+						best=current;
+						Chat("BRUTE: Best address: "<<(uint64)best);
+						ret=idrv.first;
+					} else {
+						Chat("BRUTE: Delete current address");
+						delete[] current;
+					}
+				} else {
+					Chat("BRUTE: Skipped: "+idrv.first);
+				}
+			}
+			Chat("Best - Address: "<<(uint64)best<<"; Size = "<<bestsize<<"; Method = "<<ret);
+			if (!best) { JCR6_Panic("BRUTE failed! (b)",Main,Entry); return "ERROR";}
+			if (!bestsize) { JCR6_Panic("BRUTE failed! (s)",Main,Entry); return "ERROR";}
+			for (int i=0;i<bestsize;i++) compressed[i]=best[i];
+			sc=bestsize;
+			delete[] best;
+			if (ret=="None") { JCR6_Panic("BRUTE failed! (n)",Main,Entry); return "ERROR";}
+			return ret;
+		}
+
+		static bool CompressStuff(std::string& Drv,char* uncompressed, char *compressed, int suc, int &sc,std::string Main, std::string Entry) {
+			if (Drv=="BRUTE") { Drv= BRUTE(uncompressed,compressed, suc,sc,Main,Entry); return Drv!="ERROR"; }
+			auto  adrv = GetCompDrivers();
+			auto& udrv = (*adrv)[Drv];
+			return CompressStuff(udrv,uncompressed,compressed,suc,sc,Main,Entry);
+		}
+
 
 		JT_CreateStream _JT_Create::nb(std::string Entry, std::string Storage, std::string Author, std::string Notes, Units::Endian _Endian) {
-			if (!GetCompDrivers()->count(Storage)) { 
-				JCR6_Panic("I cannot compress with unknown storage method \"" + Storage + "\"", _MainFile, Entry); 
-				return nullptr; 
+			if (!GetCompDrivers()->count(Storage)) {
+				JCR6_Panic("I cannot compress with unknown storage method \"" + Storage + "\"", _MainFile, Entry);
+				return nullptr;
 			}
 			while (Prefixed(Entry, "/")) Entry = Entry.substr(1); // Entry names should NEVER start with a '/'
 			if (!Entry.size()) { JCR6_Panic("Entry without a name!",_MainFile,"???"); return nullptr; }
@@ -116,7 +182,7 @@ namespace Slyvina {
 
 		void _JT_Create::Alias(std::string original, std::string target) {
 			if (!Entries.count(Upper(original))) {
-				//JCR6.JERROR = $"Cannot alias {original}. Entry not found!"; return; 
+				//JCR6.JERROR = $"Cannot alias {original}. Entry not found!"; return;
 				JCR6_Panic("Cannot alias '" + original + "'. Original entry not found", _MainFile, target);
 				return;
 			}
@@ -272,13 +338,14 @@ namespace Slyvina {
 				var unpacked = bt->ToChar(); //= ms.ToArray();
 				var fts = FileTableStorage;
 				//var packed = JCR6.CompDrivers[FileTableStorage].Compress(unpacked);
-				var packed_Length = bt->Size() + (bt->Size() / 4);
+				var packed_Length = (int)(bt->Size() + (bt->Size() / 4));
 				var unpacked_Length = bt->Size();
 				var adrv = GetCompDrivers();
 				var drv = (*adrv)[fts];
 				var _packed = new char[packed_Length];
 				var packed = _packed;
-				packed_Length = drv.Compress(unpacked, _packed, (int)unpacked_Length,MainFile(),"* File Table *");
+				//packed_Length = drv.Compress(unpacked, _packed, (int)unpacked_Length,MainFile(),"* File Table *");
+				CompressStuff(fts,unpacked,_packed,(int)unpacked_Length,packed_Length,MainFile(),"* File Table*");
 				if (fts != "Store" || packed_Length >= unpacked_Length) { packed = unpacked; packed_Length = unpacked_Length; fts = "Store"; }
 				//for (size_t i = 0; i < unpacked_Length; i++) std::cout << unpacked[i]; std::cout << "\n"; // DEBUG ONLY
 				//bt.Close();
@@ -375,10 +442,13 @@ namespace Slyvina {
 					astorage = "Store";
 					cd = (*cdr)["Store"];
 					printf("< Too small: %d >" , (int)rawsize); // DEBUG ONLY!
-				} 
+				}
 				//*/
 				int cmpsize2 = cmpsize;
-				if (rawsize>25) cmpsize2 = cd.Compress(rawbuff, _cmpbuff, rawsize, _Parent->MainFile(), _Entry);
+				if (rawsize>25) {
+						//cmpsize2 = cd.Compress(rawbuff, _cmpbuff, rawsize, _Parent->MainFile(), _Entry);
+						CompressStuff(astorage,rawbuff,_cmpbuff,rawsize,cmpsize2,_Parent->MainFile(),_Entry);
+				}
 				/*
 				if (cmpbuff == null) {
 					JCR6.Fail("Compression buffer failed to be created!", "?", entry);
@@ -417,7 +487,7 @@ namespace Slyvina {
 				NEntry = _JT_Entry::Create();
 				NEntry->_ConfigString["__Entry"] = _Entry; //Entry = entry,
 				NEntry->_ConfigInt["__Size"] = rawsize;
-				NEntry->_ConfigInt["__CSize"] = cmpsize2;
+				NEntry->_ConfigInt["__CSize"] = astorage=="Store"?rawsize:cmpsize2; //it appears that the compression size on Store can sometimes go wrong! I hope this \"fixes\" that!
 				NEntry->_ConfigInt["__Offset"] = _Parent->mystream->Position(); //Offset = (int)parent.mystream.Position,
 				NEntry->_ConfigString["__Author"] = _Author;
 				NEntry->_ConfigString["__Notes"] = _Notes;
@@ -441,7 +511,7 @@ namespace Slyvina {
 				NEntry->_ConfigInt["__Offset"] = (int)_BlockStream->Position(); //Offset = (int)parent.mystream.Position,
 				NEntry->_ConfigString["__Author"] = _Author;
 				NEntry->_ConfigString["__Notes"] = _Notes;
-				NEntry->_ConfigString["__MD5HASH"] = hash;				
+				NEntry->_ConfigString["__MD5HASH"] = hash;
 				NEntry->_ConfigString["__Storage"] = _Parent->Blocks[_Block]->Storage();
 
 				NEntry->_ConfigInt["__Block"] = (int)_Block;
@@ -467,7 +537,7 @@ namespace Slyvina {
 			_Parent->OpenEntries.erase(_Entry);
 			_Closed = true;
 			_Buf = nullptr;
-			// stream = null;		
+			// stream = null;
 		}
 
 		_JT_CreateStream::~_JT_CreateStream() { if (!_Closed) Close(); }
@@ -515,7 +585,7 @@ namespace Slyvina {
 			if (_closed) return;
 			var rawbuff = _Buf->ToChar(); //memstream.ToArray();
 			var rawsize = _Buf->Size();
-			var cmpsize = rawsize + (rawsize / 4);
+			var cmpsize = (int)(rawsize + (rawsize / 4));
 			var hash = "Unhashed"; //if (TJCRCreate.MaxHashSize == 0 || TJCRCreate.MaxHashSize > rawbuff.Length) hash = qstr.md5(System.Text.Encoding.Default.GetString(rawbuff));
 			//var cmpbuff = JCR6.CompDrivers[Storage].Compress(rawbuff);
 			var _cmpbuff = new char[cmpsize];
@@ -523,7 +593,8 @@ namespace Slyvina {
 			var astorage = Storage();
 			var drvs = GetCompDrivers();
 			var drv = (*drvs)[Storage()];
-			cmpsize = drv.Compress(rawbuff, _cmpbuff, rawsize, _Parent->MainFile(), BLOCKTAG);
+			//cmpsize = drv.Compress(rawbuff, _cmpbuff, rawsize, _Parent->MainFile(), BLOCKTAG);
+			CompressStuff(datastring["__Storage"],rawbuff,_cmpbuff,rawsize,cmpsize,_Parent->MainFile(),BLOCKTAG);
 			/*
 			if (cmpbuff == null) {
 				JCR6.Fail("Compression buffer failed to be created!", "?", $"Block {ID}");
@@ -561,6 +632,7 @@ namespace Slyvina {
 			dataint["__CSize"] = cmpsize;
 			dataint["__Offset"] = (int)_Parent->mystream->Position();
 			datastring["__MD5HASH"] = hash;
+
 			//parent.mystream.WriteBytes(cmpbuff);
 			_Parent->mystream->WriteChars(cmpbuff, cmpsize);
 			//if (stream != null) stream.Close();

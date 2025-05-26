@@ -1,9 +1,9 @@
 // License:
 // 	JCR6/Headers/JCR6_Core.hpp
 // 	Slyvina - JCR6 - Core (header)
-// 	version: 24.12.07
+// 	version: 25.03.01
 // 
-// 	Copyright (C) 2022, 2023, 2024 Jeroen P. Broks
+// 	Copyright (C) 2022, 2023, 2024, 2025 Jeroen P. Broks
 // 
 // 	This software is provided 'as-is', without any express or implied
 // 	warranty.  In no event will the authors be held liable for any damages
@@ -55,9 +55,11 @@ namespace Slyvina {
 		/// </summary>
 		extern JP_Panic JCR6PANIC;
 
+		extern bool AllowStoreMismatch;
+
 
 		/// <summary>
-		/// Throws an error to the JCR6 error handler. 
+		/// Throws an error to the JCR6 error handler.
 		/// This function is only supposed to be used by JCR6 itself or any drivers you may wanna create for it!
 		/// </summary>
 		void JCR6_Panic(std::string Msg, std::string MainFile = "N/A", std::string Entry = "N/A");
@@ -82,8 +84,10 @@ namespace Slyvina {
 
 		struct JC_CompressDriver {
 			std::string Name; // Name of the driver. Now please note that names must be in full lower case. Caps in any letter are reserved
-			int (*Compress) (char* Uncompressed, char* Compressed, int size_uncompressed, std::string Main, std::string Ent) { nullptr }; // This function will need to do the compression and return the size of the compressed data, or -1 if something went wrong.
-			bool (*Expand)(char* Compressed, char* UnCompressed, int size_compressed, int size_uncompressed, std::string Main, std::string Ent) { nullptr }; // This function will expand. The size_compressed parameter will check if the expanded data is indeed as long as we wanted. Will return 'true' if succesful, and 'false' if failed.
+			bool (*Compress1) (char* Uncompressed, char* Compressed, int size_uncompressed, int& size_compressed, std::string Main, std::string Ent) { nullptr }; // This function will need to do the compression and return the size of the compressed data, or -1 if something went wrong.
+			bool (*Expand1)(char* Compressed, char* UnCompressed, int size_compressed, int size_uncompressed, std::string Main, std::string Ent) { nullptr }; // This function will expand. The size_compressed parameter will check if the expanded data is indeed as long as we wanted. Will return 'true' if succesful, and 'false' if failed.
+			bool (*Compress2) (std::vector<Byte>& Uncompressed,std::vector<Byte>& Compressed, std::string Main, std::string Ent){nullptr};
+			bool (*Expand2) (std::vector<Byte>&Compressed, std::vector<Byte>&UnCompressed,std::string Main, std::string Ent){nullptr};
 		};
 		void RegisterCompressDriver(JC_CompressDriver Driver);
 
@@ -123,11 +127,11 @@ namespace Slyvina {
 			/// </summary>
 			/// <param name="Entry"></param>
 			/// <returns>true if the entry is found and false if not.</returns>
-			inline bool EntryExists(std::string Entry) { 
+			inline bool EntryExists(std::string Entry) {
 				if (!this) {
 					JCR6_Panic("EntryExists(\"" + Entry + "\"): Resource object appears to be null!", "??", Entry); return false;
 				}
-				return _Entries.count(EName(Entry)); 
+				return _Entries.count(EName(Entry));
 			}
 
 			JT_Entry Entry(std::string Ent);
@@ -211,15 +215,15 @@ namespace Slyvina {
 			inline std::string Author() { return _ConfigString["__Author"]; }
 			inline std::string Notes() { return _ConfigString["__Notes"]; }
 			inline std::string Storage() { return _ConfigString["__Storage"]; }
-			inline void Name(std::string _n) { 
+			inline void Name(std::string _n) {
 				if (!this) {
 					String E = "ENTRY IS NIL. CANNOT ASSIGN NAME: " + _n;
 					JCR6_Panic(E, "?", _n);
 					return;
 				}
-				_ConfigString["__Entry"] = Units::ChReplace(_n, '\\', '/'); 
+				_ConfigString["__Entry"] = Units::ChReplace(_n, '\\', '/');
 				auto v{ _ConfigString["__Entry"] };
-				do { 
+				do {
 					v = _ConfigString["__Entry"];
 					_ConfigString["__Entry"] = Units::StReplace(v, "//", "/");
 				} while (v != _ConfigString["__Entry"]);
@@ -231,8 +235,8 @@ namespace Slyvina {
 			inline void Storage(std::string _st) { _ConfigString["__Storage"] = _st; }
 
 			//std::string& Entry{_ConfigString["__Entry"] }; // Does this do what I think (and hope) it does?
-			
-			
+
+
 			JT_Entry Copy();
 		};
 
@@ -245,7 +249,7 @@ namespace Slyvina {
 			std::map <std::string, bool> dataBool;
 			std::map <std::string, int> dataInt;
 			std::map <std::string, std::string> dataString;
-			inline int CompressedSize() { return dataInt["__CSize"]; }			
+			inline int CompressedSize() { return dataInt["__CSize"]; }
 			inline int RealSize() {	return dataInt["__Size"]; }
 			inline int Offset() { return dataInt["__Offset"]+Correction; }
 			inline _JT_Block(int _ID, std::string _MF) { ID = _ID; MainFile = _MF; }

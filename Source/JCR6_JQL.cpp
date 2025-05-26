@@ -1,7 +1,7 @@
 // License:
 // 	JCR6/Source/JCR6_JQL.cpp
 // 	JCR Quick Link
-// 	version: 25.01.13
+// 	version: 25.04.30
 // 
 // 	Copyright (C) 2023, 2024, 2025 Jeroen P. Broks
 // 
