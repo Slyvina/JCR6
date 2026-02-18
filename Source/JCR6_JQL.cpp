@@ -1,7 +1,7 @@
 // License:
 // 	JCR6/Source/JCR6_JQL.cpp
 // 	JCR Quick Link
-// 	version: 25.04.30
+// 	version: 25.10.12
 // 
 // 	Copyright (C) 2023, 2024, 2025 Jeroen P. Broks
 // 
@@ -370,7 +370,7 @@ namespace Slyvina { //namespace UseJCR6 {
 							ret->Patch(c->parameter, fpath);
 						//break;
 						ccase("FROM") {
-						    #if SlyvWindows
+						    #ifdef SlyvWindows
 							auto P = Upper(c->parameter);
 							#else
 							auto P{c->parameter};
